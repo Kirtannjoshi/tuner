@@ -58,6 +58,38 @@ npm run build
 yarn build
 ```
 
+## Deployment
+
+### Firebase Deployment
+
+This project is configured for Firebase Hosting deployment.
+
+1. Install Firebase CLI (if not already installed)
+   ```
+   npm install -g firebase-tools
+   ```
+
+2. Log in to Firebase
+   ```
+   firebase login
+   ```
+
+3. Build the project
+   ```
+   npm run build
+   ```
+
+4. Deploy to Firebase
+   ```
+   firebase deploy --only hosting
+   ```
+
+The app is currently deployed at: https://tuneo-app-kj23.web.app
+
+### Continuous Deployment
+
+This project uses GitHub Actions for continuous deployment to Firebase Hosting. Any push to the main branch will trigger an automatic build and deployment.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
