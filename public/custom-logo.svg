@@ -1,0 +1,25 @@
+<svg width="300" height="100" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .wave {
+      fill: none;
+      stroke: #FF3CAC;
+      stroke-width: 6;
+      stroke-linecap: round;
+    }
+    .text {
+      fill: #1E90FF;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 42px;
+      font-weight: bold;
+    }
+    .bg {
+      fill: #111111;
+    }
+  </style>
+  <rect width="300" height="100" class="bg"/>
+  <!-- Tilde Wave Symbol (~ ~) -->
+  <path d="M20,30 C25,25 35,35 40,30" class="wave"/>
+  <path d="M20,50 C25,45 35,55 40,50" class="wave"/>
+  <!-- TUNER Text -->
+  <text x="60" y="58" class="text">TUNER</text>
+</svg> 

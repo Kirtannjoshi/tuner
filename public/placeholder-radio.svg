@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#374151" />
+  <path d="M100,40 C74.6,40 54,60.6 54,86 L54,114 C54,139.4 74.6,160 100,160 C125.4,160 146,139.4 146,114 L146,86 C146,60.6 125.4,40 100,40 Z" fill="#4B5563" />
+  <path d="M100,60 C85.6,60 74,71.6 74,86 L74,114 C74,128.4 85.6,140 100,140 C114.4,140 126,128.4 126,114 L126,86 C126,71.6 114.4,60 100,60 Z" fill="#6B7280" />
+  <circle cx="100" cy="100" r="15" fill="#9CA3AF" />
+  <circle cx="100" cy="100" r="5" fill="#D1D5DB" />
+
+  <!-- Sound waves -->
+  <path d="M70,100 Q60,90 60,80 Q60,70 70,60" fill="none" stroke="#EC4899" stroke-width="4" stroke-linecap="round" />
+  <path d="M60,100 Q45,85 45,70 Q45,55 60,40" fill="none" stroke="#EC4899" stroke-width="4" stroke-linecap="round" />
+  <path d="M130,100 Q140,90 140,80 Q140,70 130,60" fill="none" stroke="#EC4899" stroke-width="4" stroke-linecap="round" />
+  <path d="M140,100 Q155,85 155,70 Q155,55 140,40" fill="none" stroke="#EC4899" stroke-width="4" stroke-linecap="round" />
+</svg> 

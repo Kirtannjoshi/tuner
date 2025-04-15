@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="200" viewBox="0 0 800 200">
+  <!-- Background -->
+  <rect width="800" height="200" fill="none" />
+  
+  <!-- Text -->
+  <text x="40" y="150" font-family="Arial, sans-serif" font-weight="800" font-size="150" fill="#FFFFFF">
+    TUNER
+  </text>
+  
+  <!-- Radio wave emblem -->
+  <circle cx="700" cy="100" r="60" fill="#EC4899" />
+  <path d="M670,100 Q650,70 650,50 Q650,30 670,10" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" />
+  <path d="M730,100 Q750,70 750,50 Q750,30 730,10" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" />
+  <path d="M680,100 Q665,80 665,65 Q665,50 680,35" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" />
+  <path d="M720,100 Q735,80 735,65 Q735,50 720,35" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" />
+</svg>

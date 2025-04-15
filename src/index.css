@@ -1,0 +1,110 @@
+/* 
+ * Tailwind CSS directives
+ * CSS linters might show warnings for these directives, but they are valid
+ * when processed through the Tailwind compiler.
+ */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  color-scheme: dark;
+  --color-primary: #F863A6;
+  --color-secondary: #C1F37B;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #111827;
+  color: #ffffff;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Custom range input styles */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  background: #4b5563;
+  height: 4px;
+  border-radius: 2px;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  background-color: var(--color-primary);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+}
+
+input[type='range']:focus {
+  outline: none;
+}
+
+input[type='range']:focus::-webkit-slider-thumb {
+  background-color: #F863A6;
+}
+
+/* Theme Colors */
+.text-tuner-pink {
+  color: var(--color-primary);
+}
+
+.text-tuner-lime {
+  color: var(--color-secondary);
+}
+
+.bg-tuner-pink {
+  background-color: var(--color-primary);
+}
+
+.bg-tuner-lime {
+  background-color: var(--color-secondary);
+}
+
+.border-tuner-pink {
+  border-color: var(--color-primary);
+}
+
+.border-tuner-lime {
+  border-color: var(--color-secondary);
+}
+
+/* Hide scrollbar while maintaining functionality */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
