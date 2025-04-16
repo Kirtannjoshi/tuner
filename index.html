@@ -5,9 +5,56 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TUNER - Radio & TV Streaming</title>
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1f2937" />
+    <meta name="description" content="Stream radio stations and TV channels from around the world" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/tuner-logo.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <!-- Media Session Styles -->
+    <style>
+      /* Background play styles */
+      audio::-webkit-media-controls-play-button,
+      video::-webkit-media-controls-play-button {
+        display: flex !important;
+      }
+      
+      /* Make sure videos maintain aspect ratio */
+      video {
+        object-fit: contain;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+              console.log('ServiceWorker registration failed: ', error);
+            });
+        });
+      }
+      
+      // Add audio and video elements to support background playback
+      document.addEventListener('DOMContentLoaded', () => {
+        // Enable audio/video to continue playing when app is in background
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.setActionHandler('play', () => {
+            // Will be handled by components
+          });
+          navigator.mediaSession.setActionHandler('pause', () => {
+            // Will be handled by components
+          });
+        }
+      });
+    </script>
   </body>
 </html>

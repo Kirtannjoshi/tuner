@@ -47,6 +47,7 @@ const UnifiedPlayer = () => {
   const [waveformValues, setWaveformValues] = useState(Array(20).fill(0.1));
   const [showControls, setShowControls] = useState(true);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [volumeChangeInProgress, setVolumeChangeInProgress] = useState(false);
   
   // Refs
   const videoRef = useRef(null);
@@ -262,6 +263,64 @@ const UnifiedPlayer = () => {
     };
   }, []);
 
+  // Setup MediaSession API for mobile background playback
+  useEffect(() => {
+    if ('mediaSession' in navigator && currentMedia) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentMedia.name,
+        artist: currentMedia.type === 'radio' ? 'Internet Radio' : 'Live TV',
+        album: 'Tuner App',
+        artwork: [
+          { src: currentMedia.logo || '/tuner-logo.svg', sizes: '512x512', type: 'image/png' },
+        ]
+      });
+
+      // Set up media session action handlers
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (!isPlaying) togglePlayPause();
+      });
+      
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (isPlaying) togglePlayPause();
+      });
+      
+      navigator.mediaSession.setActionHandler('stop', () => {
+        stopMedia();
+      });
+
+      // Update playback state
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    }
+
+    // Request wake lock to prevent screen from turning off
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator && isPlaying) {
+        try {
+          const wakeLock = await navigator.wakeLock.request('screen');
+          return wakeLock;
+        } catch (err) {
+          console.error('Wake Lock error:', err);
+        }
+      }
+      return null;
+    };
+
+    let wakeLockObj = null;
+    if (isPlaying) {
+      requestWakeLock().then(lock => {
+        wakeLockObj = lock;
+      });
+    }
+
+    return () => {
+      if (wakeLockObj) {
+        wakeLockObj.release().catch(err => {
+          console.error('Error releasing wake lock:', err);
+        });
+      }
+    };
+  }, [currentMedia, isPlaying, togglePlayPause, stopMedia]);
+
   const handleStartDrag = (e) => {
     if (!pipRef.current) return;
     
@@ -378,6 +437,22 @@ const UnifiedPlayer = () => {
     if (updatePlayingState && isPlaying) {
       updatePlayingState(false);
     }
+  };
+  
+  // Add this enhanced volume control handler function before the handleStartDrag function
+  const handleVolumeChange = (e) => {
+    const newVolume = parseFloat(e.target.value);
+    
+    // Mark that volume change is in progress
+    setVolumeChangeInProgress(true);
+    
+    // Set volume with short debounce to avoid too many state updates
+    setPlayerVolume(newVolume);
+    
+    // Clear the in-progress flag after a short delay
+    setTimeout(() => {
+      setVolumeChangeInProgress(false);
+    }, 200);
   };
   
   // Render Picture-in-Picture TV Player
@@ -525,7 +600,7 @@ const UnifiedPlayer = () => {
                 max="1"
                 step="0.01"
                 value={volume}
-                onChange={(e) => setPlayerVolume(parseFloat(e.target.value))}
+                onChange={handleVolumeChange}
                 className="w-full accent-pink-500 h-2"
                 aria-label="Volume"
               />
@@ -644,7 +719,7 @@ const UnifiedPlayer = () => {
                         max="1"
                         step="0.01"
                         value={volume}
-                        onChange={(e) => setPlayerVolume(parseFloat(e.target.value))}
+                        onChange={handleVolumeChange}
                         onClick={(e) => e.stopPropagation()}
                         className="w-24 accent-pink-500"
                         aria-label="Volume control"
@@ -710,7 +785,7 @@ const UnifiedPlayer = () => {
               max="1"
               step="0.01"
               value={volume}
-              onChange={(e) => setPlayerVolume(parseFloat(e.target.value))}
+              onChange={handleVolumeChange}
               className="w-24 accent-pink-500"
             />
           </div>

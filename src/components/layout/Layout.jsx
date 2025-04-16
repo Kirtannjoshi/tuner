@@ -12,6 +12,11 @@ const Layout = () => {
   const location = useLocation();
   const path = location.pathname;
 
+  // Determine if we're on the main media page for the current media type
+  const isOnMediaMainPage = currentMedia && 
+    ((currentMedia.type === 'radio' && path === '/radio') || 
+    (currentMedia.type === 'tv' && path === '/tv'));
+
   useEffect(() => {
     const handleScroll = () => {
       const offset = window.scrollY;
@@ -159,8 +164,8 @@ const Layout = () => {
         <BottomNav />
       </div>
       
-      {/* Unified Player for background playback */}
-      {currentMedia && (
+      {/* Unified Player for background playback - only show when not on the main page of that media type */}
+      {currentMedia && !isOnMediaMainPage && (
         <UnifiedPlayer />
       )}
     </div>
