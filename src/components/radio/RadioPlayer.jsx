@@ -16,7 +16,21 @@ const RadioPlayer = ({ station }) => {
   const hlsRef = useRef(null);
   
   // Use PlayerContext for audio functionality
-  const { currentMedia, isPlaying, playRadio, togglePlay: contextTogglePlay } = useContext(PlayerContext);
+  const { 
+    currentMedia, 
+    isPlaying, 
+    playRadio, 
+    togglePlayPause, 
+    setPlayerVolume,
+    volume: contextVolume 
+  } = useContext(PlayerContext);
+
+  // Set initial volume from context
+  useEffect(() => {
+    if (contextVolume) {
+      setVolume(contextVolume);
+    }
+  }, [contextVolume]);
 
   // Function to determine if URL is an HLS stream
   const isHlsStream = (url) => {
@@ -77,7 +91,7 @@ const RadioPlayer = ({ station }) => {
 
   const togglePlay = () => {
     if (!station) return;
-    contextTogglePlay();
+    togglePlayPause();
   };
 
   const retryPlayback = () => {
@@ -119,6 +133,13 @@ const RadioPlayer = ({ station }) => {
         .then(() => alert('Link copied to clipboard!'))
         .catch(err => console.error('Error copying to clipboard:', err));
     }
+  };
+
+  // Handle volume changes
+  const handleVolumeChange = (e) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    setPlayerVolume(newVolume);
   };
 
   return (
@@ -226,10 +247,7 @@ const RadioPlayer = ({ station }) => {
                 max="1"
                 step="0.01"
                 value={volume}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  setVolume(value);
-                }}
+                onChange={handleVolumeChange}
                 className="w-full accent-pink-500 h-2"
                 aria-label="Volume"
               />
