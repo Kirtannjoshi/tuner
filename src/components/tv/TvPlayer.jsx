@@ -84,6 +84,22 @@ const TvPlayer = ({ channel }) => {
     }
   }, [channel]);
 
+  // Move up to where component state is defined (around line 44)
+  useEffect(() => {
+    // Check if this station is in favorites
+    if (channel) {
+      setIsFavorite(isChannelFavorite(channel.id));
+    }
+    
+    // Sync local state with context state
+    setIsPlaying(contextIsPlaying);
+    
+    // Update volume from context when it changes
+    if (videoRef.current) {
+      videoRef.current.volume = volume;
+    }
+  }, [channel, contextIsPlaying, volume]);
+
   // Helper to determine if we should use CORS proxy for this URL
   const getStreamUrl = (url) => {
     if (!url) {
@@ -434,15 +450,15 @@ const TvPlayer = ({ channel }) => {
     }
   };
 
-  // Modify togglePlay to handle mobile-specific issues
+  // Enhance the togglePlay function (around line 438):
   const togglePlay = () => {
     if (!videoRef.current || !channel) return;
     
     // Toggle play/pause state in the global player context
     togglePlayPause();
     
-    // Update the local isPlaying state based on the video element's actual state
-    // This will be handled by the onPlay/onPause event handlers
+    // Let the context handle the actual state changes
+    // We'll update local state in response to context changes
   };
 
   const toggleCorsProxy = () => {
@@ -460,12 +476,15 @@ const TvPlayer = ({ channel }) => {
     setIsFavorite(!isFavorite);
   };
 
+  // Update the volume handler (around line 463)
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
+    
+    // Update the volume both locally and in the context
     setPlayerVolume(newVolume);
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-    }
+    
+    // We don't need to manually set the video volume here as it will be done
+    // through the useEffect hook that watches for volume changes
   };
 
   const handleVideoClick = () => {
@@ -645,12 +664,15 @@ const TvPlayer = ({ channel }) => {
           >
             <video
               ref={videoRef}
-              className="w-full aspect-video cursor-pointer"
-              poster={channel.logo || '/placeholder-tv.svg'}
+              className="w-full aspect-video bg-black cursor-pointer"
+              controls={false}
+              muted={volume === 0}
               playsInline
-              onLoadStart={handleVideoLoadStart}
+              autoPlay={false}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
+              onLoadStart={handleVideoLoadStart}
+              onClick={handleVideoClick}
             />
 
             {/* Mobile Play/Pause Overlay - only visible on touch devices */}
