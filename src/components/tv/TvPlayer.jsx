@@ -670,7 +670,6 @@ const TvPlayer = ({ channel }) => {
             className="relative group" 
             onClick={handleVideoClick}
           >
-<<<<<<< HEAD
             {error ? (
               <RetroTVLoader error={error} onRetry={handleRetry} />
             ) : !isPlaying ? (
@@ -689,20 +688,6 @@ const TvPlayer = ({ channel }) => {
                 onClick={handleVideoClick}
               />
             )}
-=======
-            <video
-              ref={videoRef}
-              className="w-full aspect-video bg-black cursor-pointer"
-              controls={false}
-              muted={volume === 0}
-              playsInline
-              autoPlay={false}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onLoadStart={handleVideoLoadStart}
-              onClick={handleVideoClick}
-            />
->>>>>>> 4105d8be8b6c22f58b820a27d7b00831736f446f
 
             {/* Mobile Play/Pause Overlay - only visible on touch devices */}
             <div className="absolute inset-0 md:hidden flex items-center justify-center touch-none">
