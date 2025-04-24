@@ -84,7 +84,7 @@ This project is configured for Firebase Hosting deployment.
    firebase deploy --only hosting
    ```
 
-The app is currently deployed at: https://tuneo-app-kj23.web.app
+The app is currently deployed at: https://tuner-5811b.web.app/
 
 ### Continuous Deployment
 
