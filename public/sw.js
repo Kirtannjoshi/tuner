@@ -14,13 +14,46 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache)
+          .catch(error => {
+            console.error('Failed to cache resources:', error);
+            // Continue installation even if caching fails
+            return Promise.resolve();
+          });
       })
   );
+  // Skip waiting to activate immediately
+  self.skipWaiting();
 });
 
 // Fetch event - serve from cache if available, otherwise fetch from network
 self.addEventListener('fetch', event => {
+  // Skip unsupported schemes
+  const url = new URL(event.request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
+  // Skip caching for development URLs and dynamic content
+  if (url.hostname === 'localhost' || 
+      url.hostname.includes('.localhost') || 
+      url.searchParams.toString() || 
+      url.pathname.startsWith('/@vite/') || 
+      url.pathname.endsWith('.jsx') || 
+      url.pathname.includes('react-refresh') ||
+      url.pathname.includes('src/') ||
+      url.pathname.includes('node_modules/') ||
+      url.pathname.includes('assets/')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(error => {
+          console.error('Development resource fetch failed:', error);
+          return new Response('Development server not running', { status: 503 });
+        })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -30,8 +63,8 @@ self.addEventListener('fetch', event => {
         }
         return fetch(event.request).then(
           response => {
-            // Don't cache non-success or non-GET responses
-            if (!response || response.status !== 200 || response.type !== 'basic' || event.request.method !== 'GET') {
+            // Don't cache failed responses or non-GET requests
+            if (!response || !response.ok || event.request.method !== 'GET') {
               return response;
             }
 
@@ -41,7 +74,8 @@ self.addEventListener('fetch', event => {
             // Cache the fetched response
             caches.open(CACHE_NAME)
               .then(cache => {
-                cache.put(event.request, responseToCache);
+                cache.put(event.request, responseToCache)
+                  .catch(err => console.warn('Cache put failed:', err));
               });
 
             return response;
@@ -94,4 +128,4 @@ self.addEventListener('fetch', event => {
     // Add to active sessions
     audioSessions.add(url.href);
   }
-}); 
+});

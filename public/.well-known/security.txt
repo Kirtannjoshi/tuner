@@ -1,0 +1,6 @@
+Contact: mailto:security@tuner.live
+Expires: 2025-07-14T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://tunerapp.live/.well-known/security.txt
+Policy: https://tunerapp.live/security-policy
+Hiring: https://tunerapp.live/careers

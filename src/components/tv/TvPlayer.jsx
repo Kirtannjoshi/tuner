@@ -15,6 +15,7 @@ import {
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { addFavoriteChannel, removeFavoriteChannel, isChannelFavorite } from '../../services/favoritesService';
 import { PlayerContext } from '../../contexts/PlayerContext';
+import RetroTVLoader from './RetroTVLoader';
 
 // CORS proxy for stream URLs that need it
 const CORS_PROXY = 'https://cors.streams.ovh/';
@@ -116,6 +117,13 @@ const TvPlayer = ({ channel }) => {
     }
 
     return useCorsProxy ? `${CORS_PROXY}${url}` : url;
+  };
+
+  // Handle retry when stream fails
+  const handleRetry = () => {
+    setError(null);
+    setRetryWithProxy(!useCorsProxy);
+    setUseCorsProxy(!useCorsProxy);
   };
 
   // Handle channel changes or proxy changes
@@ -662,18 +670,24 @@ const TvPlayer = ({ channel }) => {
             className="relative group" 
             onClick={handleVideoClick}
           >
-            <video
-              ref={videoRef}
-              className="w-full aspect-video bg-black cursor-pointer"
-              controls={false}
-              muted={volume === 0}
-              playsInline
-              autoPlay={false}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onLoadStart={handleVideoLoadStart}
-              onClick={handleVideoClick}
-            />
+            {error ? (
+              <RetroTVLoader error={error} onRetry={handleRetry} />
+            ) : !isPlaying ? (
+              <RetroTVLoader />
+            ) : (
+              <video
+                ref={videoRef}
+                className="w-full aspect-video bg-black cursor-pointer"
+                controls={false}
+                muted={volume === 0}
+                playsInline
+                autoPlay={false}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onLoadStart={handleVideoLoadStart}
+                onClick={handleVideoClick}
+              />
+            )}
 
             {/* Mobile Play/Pause Overlay - only visible on touch devices */}
             <div className="absolute inset-0 md:hidden flex items-center justify-center touch-none">

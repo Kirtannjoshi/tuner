@@ -1,14 +1,19 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HeartIcon, RadioIcon, TvIcon } from '@heroicons/react/24/outline';
+import { HeartIcon, RadioIcon, TvIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import { getAllStations } from '../services/radioService';
 import { getAllChannels } from '../services/tvService';
+import { getLiveMatches, getUpcomingMatches, getPastMatches } from '../services/iplService';
+import MatchCard from '../components/ipl/MatchCard';
 import { PlayerContext } from '../contexts/PlayerContext';
 import '../styles/scrollbar.css';
 
 const HomePage = () => {
   const [topRadioStations, setTopRadioStations] = useState([]);
   const [topTvChannels, setTopTvChannels] = useState([]);
+  const [liveMatches, setLiveMatches] = useState([]);
+  const [upcomingMatches, setUpcomingMatches] = useState([]);
+  const [pastMatches, setPastMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { playRadio, playTv } = useContext(PlayerContext);
   const navigate = useNavigate();
@@ -18,14 +23,20 @@ const HomePage = () => {
       setIsLoading(true);
       try {
         // Fetch data in parallel
-        const [stations, channels] = await Promise.all([
+        const [stations, channels, live, upcoming, past] = await Promise.all([
           getAllStations(),
-          getAllChannels()
+          getAllChannels(),
+          getLiveMatches(),
+          getUpcomingMatches(),
+          getPastMatches()
         ]);
         
         // Get a selection of popular stations/channels
         setTopRadioStations(stations.slice(0, 10));
         setTopTvChannels(channels.slice(0, 10));
+        setLiveMatches(live);
+        setUpcomingMatches(upcoming.slice(0, 3));
+        setPastMatches(past.slice(0, 3));
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -133,6 +144,52 @@ const HomePage = () => {
         </div>
       </section>
       
+      {/* IPL Section */}
+      <section>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-xl font-semibold flex items-center">
+            <TrophyIcon className="h-5 w-5 mr-2 text-pink-500" />
+            IPL 2024
+          </h2>
+          <button onClick={() => navigate('/ipl')} className="text-sm text-pink-500 hover:text-pink-400">
+            View All →
+          </button>
+        </div>
+
+        {liveMatches.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-lg font-medium mb-2 flex items-center">
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></span>
+              Live Matches
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {liveMatches.map(match => (
+                <MatchCard key={match.matchId} match={match} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-medium mb-2">Upcoming Matches</h3>
+            <div className="space-y-3">
+              {upcomingMatches.map(match => (
+                <MatchCard key={match.matchId} match={match} />
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-lg font-medium mb-2">Recent Results</h3>
+            <div className="space-y-3">
+              {pastMatches.map(match => (
+                <MatchCard key={match.matchId} match={match} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Browse by Category */}
       <section>
         <h2 className="text-xl font-semibold mb-3">Browse by Category</h2>
@@ -159,4 +216,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage; 
+export default HomePage;

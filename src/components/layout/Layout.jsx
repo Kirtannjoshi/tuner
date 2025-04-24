@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { RadioIcon, TvIcon, HeartIcon, Bars3Icon, XMarkIcon, HomeIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { RadioIcon, TvIcon, HeartIcon, Bars3Icon, XMarkIcon, HomeIcon, Cog6ToothIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import { useContext, useState, useEffect } from 'react';
 import { PlayerContext } from '../../contexts/PlayerContext';
 import BottomNav from './BottomNav';
@@ -77,6 +77,15 @@ const Layout = () => {
                 <TvIcon className="h-5 w-5 mr-2" />
                 TV
               </NavLink>
+              <NavLink
+                to="/sport"
+                className={({ isActive }) => 
+                  `flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${isActive ? 'bg-pink-600 text-white' : 'hover:bg-gray-700'}`
+                }
+              >
+                <TrophyIcon className="h-5 w-5 mr-2" />
+                Sport
+              </NavLink>
             </nav>
 
             {/* Favorites button - Right side */}
@@ -140,6 +149,16 @@ const Layout = () => {
               >
                 <TvIcon className="h-5 w-5 mr-2" />
                 TV
+              </NavLink>
+              <NavLink
+                to="/sport"
+                className={({ isActive }) => 
+                  `flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive ? 'bg-pink-600 text-white' : 'hover:bg-gray-700'}`
+                }
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <TrophyIcon className="h-5 w-5 mr-2" />
+                Sport
               </NavLink>
               <NavLink
                 to="/favorites"

@@ -49,7 +49,7 @@ const CURATED_STATIONS = [
     country: 'United Kingdom',
     countryFlag: COUNTRIES['United Kingdom'].flag,
     language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/c/c7/Classic_FM_logo.svg/1200px-Classic_FM_logo.svg.png',
+    logo: 'https://cdn-profiles.tunein.com/s8439/images/logog.jpg?t=638',
     streamUrl: 'https://ice55.securenetsystems.net/DASH38'
   },
   {
@@ -59,7 +59,7 @@ const CURATED_STATIONS = [
     country: 'United Kingdom',
     countryFlag: COUNTRIES['United Kingdom'].flag,
     language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/BBC_Radio_2.svg/1200px-BBC_Radio_2.svg.png',
+    logo: 'https://seeklogo.com/images/B/bbc-radio-2-logo-FA3E8E9AB5-seeklogo.com.png',
     streamUrl: 'https://ice55.securenetsystems.net/DASH31'
   },
   {
@@ -69,7 +69,7 @@ const CURATED_STATIONS = [
     country: 'United Kingdom',
     countryFlag: COUNTRIES['United Kingdom'].flag,
     language: 'English',
-    logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQuHoONcOkR7unCtHpOmzV8M_NVR7jmAjIv1Q&s',
+    logo: 'https://i.pinimg.com/564x/21/fe/8e/21fe8ea98473caede20ecd77183b4ccb.jpg',
     streamUrl: 'https://media-ssl.musicradio.com/CapitalUK'
   },
   {
@@ -79,7 +79,7 @@ const CURATED_STATIONS = [
     country: 'United Kingdom',
     countryFlag: COUNTRIES['United Kingdom'].flag,
     language: 'English/Hindi/Urdu',
-    logo: 'https://www.asiansoundradio.com/wp-content/uploads/2020/08/asian-sound-logo-300x300.png',
+    logo: 'https://uk-radio.com/wp-content/uploads/Asian-Sound-Radio.jpg',
     streamUrl: 'https://streaming.radio.co/s27b8e5b4b/listen'
   },
 
@@ -91,7 +91,7 @@ const CURATED_STATIONS = [
     country: 'United States',
     countryFlag: COUNTRIES['United States'].flag,
     language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/22/JAZZ24_logo.svg/1200px-JAZZ24_logo.svg.png',
+    logo: 'https://npr.brightspotcdn.com/98/f7/48229ba341b0b1c8933834130d10/jazz24.jpg',
     streamUrl: 'https://ice55.securenetsystems.net/DASH7'
   },
   {
@@ -101,7 +101,7 @@ const CURATED_STATIONS = [
     country: 'United States',
     countryFlag: COUNTRIES['United States'].flag,
     language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/KEXP_logo.svg/1200px-KEXP_logo.svg.png',
+    logo: 'https://www.volunteermatch.org/images/gallery/20CEEACB-0722-996B-C4E2-1AAFD5DCB182_m?ts=1445372368000',
     streamUrl: 'https://ice55.securenetsystems.net/DASH29'
   },
   {
@@ -111,7 +111,7 @@ const CURATED_STATIONS = [
     country: 'United States',
     countryFlag: COUNTRIES['United States'].flag,
     language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/National_Public_Radio_logo.svg/1200px-National_Public_Radio_logo.svg.png',
+    logo: 'https://www.blacklungblog.com/wp-content/uploads/2017/07/NPR-logo-square.png',
     streamUrl: 'https://npr-ice.streamguys1.com/live.mp3'
   },
 
@@ -175,8 +175,8 @@ const CURATED_STATIONS = [
     country: 'India',
     countryFlag: COUNTRIES['India'].flag,
     language: 'Hindi',
-    logo: 'https://static.mytuner.mobi/media/tvos_radios/sy4srd7ksbtg.png',
-    streamUrl: 'https://air.pc.cdn.bitgravity.com/air/live/pbaudio037/playlist.m3u8'
+    logo: 'https://oetpai.fra1.digitaloceanspaces.com/new_images/radioapp_100859.jpg',
+    streamUrl: 'https://radiosindia.com/radiomirchihindi.html'
   },
   {
     id: 'radio_city_91',
@@ -269,7 +269,7 @@ const CURATED_STATIONS = [
     country: 'International',
     countryFlag: COUNTRIES['International'].flag,
     language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Radio_paradise.svg/640px-Radio_paradise.svg.png',
+    logo: 'https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84d134cb4e79404fce5ae3cb35',
     streamUrl: 'https://stream.radioparadise.com/aac-128'
   },
   {
@@ -324,4 +324,4 @@ export const getRadioGenres = () => {
 // Removed getRadioStations, getStationsByCountry, getStationsByGenre, 
 // getPopularStations, searchStations as filtering/sorting will be client-side
 // based on getAllStations() in the RadioPage component.
-// Favorites service might handle favorite filtering separately. 
+// Favorites service might handle favorite filtering separately.

@@ -31,111 +31,7 @@ const COUNTRIES = {
 
 // TV Channels organized by country
 const CURATED_CHANNELS = [
-  // United Kingdom Channels
-  {
-    id: 'bbc_news',
-    name: 'BBC News',
-    genre: 'news',
-    country: 'United Kingdom',
-    countryFlag: COUNTRIES['United Kingdom'].flag,
-    language: 'English',
-    logo: 'https://i.imgur.com/eNPIQ9h.png',
-    streamUrl: 'https://vs-hls-push-uk-live.akamaized.net/x=3/i=urn:bbc:pips:service:bbc_news_channel_hd/mobile_wifi_main_sd_abr_v2.m3u8'
-  },
-  {
-    id: 'sky_news',
-    name: 'Sky News',
-    genre: 'news',
-    country: 'United Kingdom',
-    countryFlag: COUNTRIES['United Kingdom'].flag,
-    language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b4/Sky-news-logo.png',
-    streamUrl: 'https://linear021-gb-hls1-prd-ak.cdn.skycdp.com/Content/HLS_001_sd/Live/channel(skynews)/index_hd.m3u8'
-  },
-  
-  // US Channels
-  {
-    id: 'cnn',
-    name: 'CNN',
-    genre: 'news',
-    country: 'United States',
-    countryFlag: COUNTRIES['United States'].flag,
-    language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/CNN.svg/800px-CNN.svg.png',
-    streamUrl: 'https://cnn-cnninternational-1-de.samsung.wurl.tv/playlist.m3u8'
-  },
-  {
-    id: 'bloomberg',
-    name: 'Bloomberg TV',
-    genre: 'business',
-    country: 'United States',
-    countryFlag: COUNTRIES['United States'].flag,
-    language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/3/3b/Bloomberg_Television_2016.png',
-    streamUrl: 'https://bloomberg-bloomberg-1-eu.rakuten.wurl.tv/playlist.m3u8'
-  },
-  {
-    id: 'nbc_news',
-    name: 'NBC News',
-    genre: 'news',
-    country: 'United States',
-    countryFlag: COUNTRIES['United States'].flag,
-    language: 'English',
-    logo: 'https://i.imgur.com/v48mMRT.png',
-    streamUrl: 'https://nbcnews2.akamaized.net/hls/live/723426/NBCNewsPlaymaker24x7Linear99a3a827-ua/master.m3u8'
-  },
-  
   // Indian Channels
-  {
-    id: 'dd_national',
-    name: 'DD National',
-    genre: 'entertainment',
-    country: 'India',
-    countryFlag: COUNTRIES['India'].flag,
-    language: 'Hindi',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/DD_National_2023_Purple.svg/800px-DD_National_2023_Purple.svg.png',
-    streamUrl: 'https://ythls.armelin.one/channel/UCnJYChrisBRJHbnkIUzTm7g.m3u8'
-  },
-  {
-    id: 'india_today',
-    name: 'India Today',
-    genre: 'news',
-    country: 'India',
-    countryFlag: COUNTRIES['India'].flag,
-    language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/en/0/0d/India_Today_Logo.png',
-    streamUrl: 'https://ythls.armelin.one/channel/UCYPvAwZP8pZhSMW8qs7cVCw.m3u8'
-  },
-  {
-    id: 'ndtv',
-    name: 'NDTV 24x7',
-    genre: 'news',
-    country: 'India',
-    countryFlag: COUNTRIES['India'].flag,
-    language: 'English',
-    logo: 'https://i.imgur.com/pQ4Y4oT.png',
-    streamUrl: 'https://ndtv24x7elemarchana.akamaized.net/hls/live/2003678/ndtv24x7/master.m3u8'
-  },
-  {
-    id: 'zee_news',
-    name: 'Zee News',
-    genre: 'news',
-    country: 'India',
-    countryFlag: COUNTRIES['India'].flag,
-    language: 'Hindi',
-    logo: 'https://i.imgur.com/9nSS5Ii.png',
-    streamUrl: 'https://ythls.armelin.one/channel/UCIvaYmXn910QMdemBG3v1pQ.m3u8'
-  },
-  {
-    id: 'dd_bharati',
-    name: 'DD Bharati',
-    genre: 'culture',
-    country: 'India',
-    countryFlag: COUNTRIES['India'].flag,
-    language: 'Hindi',
-    logo: 'https://i.imgur.com/wOi9hgV.png',
-    streamUrl: 'https://ythls.armelin.one/channel/UCIAnlTV3O9NYWMI-DwYZaWg.m3u8'
-  },
   {
     id: 'aaj_tak',
     name: 'Aaj Tak',
@@ -143,41 +39,11 @@ const CURATED_CHANNELS = [
     country: 'India',
     countryFlag: COUNTRIES['India'].flag,
     language: 'Hindi',
-    logo: 'https://i.imgur.com/gGGbZRr.png',
+    logo: 'https://i.pinimg.com/736x/be/1d/5d/be1d5d11523f09687b56c6e4011cc7a5.jpg',
     streamUrl: 'https://aajtaklive-amd.akamaized.net/hls/live/2014416/aajtak/aajtaklive/live_720p/chunks.m3u8'
   },
   
   // International Channels
-  {
-    id: 'euronews',
-    name: 'Euronews',
-    genre: 'news',
-    country: 'International',
-    countryFlag: COUNTRIES['International'].flag,
-    language: 'English',
-    logo: 'https://static.euronews.com/website/images/euronews-logo-primary.svg',
-    streamUrl: 'https://shls-live-ak.akamaized.net/out/v1/115bfcde8fa342d182ef846445cdbdcf/index.m3u8'
-  },
-  {
-    id: 'dw',
-    name: 'DW English',
-    genre: 'news',
-    country: 'International',
-    countryFlag: COUNTRIES['International'].flag,
-    language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/DW_%28TV%29_Logo_2012.png',
-    streamUrl: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8'
-  },
-  {
-    id: 'aljazeera',
-    name: 'Al Jazeera',
-    genre: 'news',
-    country: 'International',
-    countryFlag: COUNTRIES['International'].flag,
-    language: 'English',
-    logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Aljazeera_eng.svg/800px-Aljazeera_eng.svg.png',
-    streamUrl: 'https://live-hls-web-aje.getaj.net/AJE/index.m3u8'
-  },
   {
     id: 'red_bull_tv',
     name: 'Red Bull TV',
@@ -187,46 +53,6 @@ const CURATED_CHANNELS = [
     language: 'English',
     logo: 'https://i.imgur.com/7NeBmWX.jpg',
     streamUrl: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8'
-  },
-  {
-    id: 'nasa_tv',
-    name: 'NASA TV',
-    genre: 'science',
-    country: 'International',
-    countryFlag: COUNTRIES['International'].flag,
-    language: 'English',
-    logo: 'https://i.imgur.com/iJldO7U.jpg',
-    streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8'
-  },
-  {
-    id: 'fashion_tv',
-    name: 'Fashion TV',
-    genre: 'lifestyle',
-    country: 'International',
-    countryFlag: COUNTRIES['International'].flag,
-    language: 'English',
-    logo: 'https://i.imgur.com/auHH1Ig.png',
-    streamUrl: 'https://fashs043.cloudycdn.services/scte/sftv_adapt/playlist.m3u8'
-  },
-  {
-    id: 'bloomberg_quicktake',
-    name: 'Bloomberg Quicktake',
-    genre: 'business',
-    country: 'International',
-    countryFlag: COUNTRIES['International'].flag,
-    language: 'English',
-    logo: 'https://i.imgur.com/HL7fwzt.png',
-    streamUrl: 'https://bloomberg-quicktake-1-eu.rakuten.wurl.tv/playlist.m3u8'
-  },
-  {
-    id: 'fox_sports',
-    name: 'Fox Sports',
-    genre: 'sports',
-    country: 'United States',
-    countryFlag: COUNTRIES['United States'].flag,
-    language: 'English',
-    logo: 'https://i.imgur.com/ULcj40x.png',
-    streamUrl: 'https://austchannel-live.akamaized.net/hls/live/2002736/austchannel-sport/master.m3u8'
   },
   {
     id: 'cbs_news',

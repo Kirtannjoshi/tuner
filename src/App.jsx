@@ -4,6 +4,7 @@ import RadioPage from './pages/RadioPage';
 import TvPage from './pages/TvPage';
 import FavoritesPage from './pages/FavoritesPage';
 import HomePage from './pages/HomePage';
+import SportPage from './pages/SportPage';
 import { PlayerProvider } from './contexts/PlayerContext';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="radio" element={<RadioPage />} />
             <Route path="tv" element={<TvPage />} />
+            <Route path="sport" element={<SportPage />} />
             <Route path="favorites" element={<FavoritesPage />} />
           </Route>
         </Routes>
