@@ -30,7 +30,7 @@ A modern streaming platform for radio stations and TV channels with a sleek, res
 
 1. Clone the repository
    ```
-   git clone https://github.com/yourusername/tuner.git
+   git clone https://github.com/kirtannjoshi/tuner.git
    cd tuner
    ```
 
@@ -47,6 +47,9 @@ A modern streaming platform for radio stations and TV channels with a sleek, res
    # or
    yarn dev
    ```
+   cd server
+   npm install
+   npm start
 
 4. Open your browser and navigate to `http://localhost:5173` (or the port shown in your terminal)
 
