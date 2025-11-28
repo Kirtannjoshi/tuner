@@ -1,38 +1,59 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TUNER - Radio & TV Streaming</title>
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#1f2937" />
-    <meta name="description" content="Stream radio stations and TV channels from around the world" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" href="/tuner-logo.svg" />
-    <link rel="manifest" href="/manifest.json" />
-    <!-- Media Session Styles -->
-    <style>
-      /* Background play styles */
-      audio::-webkit-media-controls-play-button,
-      video::-webkit-media-controls-play-button {
-        display: flex !important;
-      }
-      
-      /* Make sure videos maintain aspect ratio */
-      video {
-        object-fit: contain;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/tuner-logo.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TUNER - Radio & TV Streaming</title>
+
+  <!-- Content Security Policy for media streaming -->
+  <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      img-src 'self' data: blob: *;
+      media-src 'self' data: blob: *;
+      connect-src 'self' ws: wss: *;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline';
+      frame-src 'self' *;
+      font-src 'self' data:;
+    ">
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#1f2937" />
+  <meta name="description" content="Stream radio stations and TV channels from around the world" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="/tuner-logo.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <!-- Media Session Styles -->
+  <style>
+    /* Background play styles */
+    audio::-webkit-media-controls-play-button,
+    video::-webkit-media-controls-play-button {
+      display: flex !important;
+    }
+
+    /* Make sure videos maintain aspect ratio */
+    video {
+      object-fit: contain;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <!-- HLS.js for streaming support - Removed as it is imported in components -->
+
+
+  <script type="module" src="/src/main.jsx"></script>
+  <!-- Service Worker Registration -->
+  <script type="module">
+    // Service worker: register only in production to avoid caching during development.
+    if ('serviceWorker' in navigator) {
+      if (import.meta.env && import.meta.env.PROD) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then(registration => {
@@ -42,20 +63,72 @@
               console.log('ServiceWorker registration failed: ', error);
             });
         });
-      }
-      
-      // Add audio and video elements to support background playback
-      document.addEventListener('DOMContentLoaded', () => {
-        // Enable audio/video to continue playing when app is in background
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.setActionHandler('play', () => {
-            // Will be handled by components
-          });
-          navigator.mediaSession.setActionHandler('pause', () => {
-            // Will be handled by components
-          });
+      } else {
+        // In development: unregister any service workers and clear caches to prevent stale modules
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(reg => reg.unregister());
+        }).catch(() => { });
+
+        if (window.caches) {
+          caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => { });
         }
-      });
-    </script>
-  </body>
+        console.log('Dev mode: service workers unregistered and caches cleared');
+      }
+    }
+
+    // Add audio and video elements to support background playback
+    document.addEventListener('DOMContentLoaded', () => {
+      // Enable audio/video to continue playing when app is in background
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('play', () => {
+          // Will be handled by components
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          // Will be handled by components
+        });
+      }
+      // Dev-only visual indicator so we can confirm index.html loaded even if React errors
+      try {
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+          const statusDiv = document.createElement('div');
+          statusDiv.id = 'dev-debug-banner';
+          statusDiv.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:99999;padding:8px 12px;background:rgba(0,0,0,0.7);color:#fff;border-radius:8px;font-size:12px;font-family:Arial,sans-serif;';
+          statusDiv.textContent = 'DEV: index.html loaded — checking SW status...';
+          document.body.appendChild(statusDiv);
+
+          // Update with SW and cache info
+          (async () => {
+            let info = [];
+            if ('serviceWorker' in navigator) {
+              try {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                info.push(`SW regs: ${regs.length}`);
+              } catch (e) {
+                info.push('SW regs: err');
+              }
+            } else {
+              info.push('SW not supported');
+            }
+
+            if (window.caches) {
+              try {
+                const keys = await caches.keys();
+                info.push(`cache keys: ${keys.length}`);
+              } catch (e) {
+                info.push('cache keys: err');
+              }
+            } else {
+              info.push('caches n/a');
+            }
+
+            statusDiv.textContent = 'DEV: ' + info.join(' • ');
+          })();
+        }
+      } catch (e) {
+        // ignore
+      }
+    });
+  </script>
+</body>
+
 </html>

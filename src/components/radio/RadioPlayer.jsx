@@ -1,18 +1,35 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import Hls from 'hls.js';
-import { HeartIcon, SpeakerWaveIcon, ShareIcon, PlayIcon, PauseIcon } from '@heroicons/react/24/outline';
+import { HeartIcon, SpeakerWaveIcon, ShareIcon, PlayIcon, PauseIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { addFavoriteStation, removeFavoriteStation, isStationFavorite } from '../../services/favoritesService';
 import { PlayerContext } from '../../contexts/PlayerContext';
+import { initializeStream, handleStreamError } from '../../utils/streamUtils';
+import { getProxiedImageUrl, getFallbackImageUrl } from '../../utils/imageUtils';
 
 const RadioPlayer = ({ station }) => {
+  // Error message component
+  const ErrorMessage = ({ message, onRetry }) => (
+    <div className="flex flex-col items-center justify-center p-4 bg-red-50 rounded-lg">
+      <ExclamationCircleIcon className="w-8 h-8 text-red-500 mb-2" />
+      <p className="text-red-700 text-center mb-3">{message}</p>
+      <button
+        onClick={onRetry}
+        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+      >
+        Try Again
+      </button>
+    </div>
+  );
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [volume, setVolume] = useState(0.8);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [metadata, setMetadata] = useState({ title: '', artist: '' });
   const [waveformValues, setWaveformValues] = useState(Array(20).fill(0.1));
   const animationRef = useRef();
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const hlsRef = useRef(null);
   
   // Use PlayerContext for audio functionality
@@ -44,23 +61,39 @@ const RadioPlayer = ({ station }) => {
     // Check if this station is in favorites
     setIsFavorite(isStationFavorite(station.id));
     
-    // Reset error state
-    setError(null);
-    
-    // Only play the station if it's not already the current media
-    if (!currentMedia || currentMedia.type !== 'radio' || currentMedia.id !== station.id) {
+    const initializeStation = async () => {
+      setError(null);
       setIsLoading(true);
-      // Play the station using context
-      playRadio(station);
-      setIsLoading(false);
-    }
+      
+      try {
+        // Only initialize if it's not already playing
+        if (!currentMedia || currentMedia.type !== 'radio' || currentMedia.id !== station.id) {
+          const streamUrl = await initializeStream(station.streamUrl, station.genre);
+          await playRadio({ ...station, streamUrl });
+        }
+      } catch (err) {
+        const errorMessage = handleStreamError(err);
+        setError(errorMessage || 'Unable to play this station. Please try again later.');
+        console.error('Station initialization failed:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    initializeStation();
     
     // Reset metadata for new station
     setMetadata({ 
       title: 'Now Playing', 
       artist: station.name 
     });
-  }, [station, currentMedia]); // Include currentMedia in dependencies
+    
+    // Cleanup function
+    return () => {
+      setError(null);
+      setIsLoading(false);
+    };
+  }, [station, currentMedia, playRadio]); // Include all dependencies
 
   // Update state when current media changes
   useEffect(() => {
@@ -94,17 +127,21 @@ const RadioPlayer = ({ station }) => {
     togglePlayPause();
   };
 
-  const retryPlayback = () => {
+  const retryPlayback = async () => {
     if (!station) return;
     
-    // Reset error state
     setError(null);
     setIsLoading(true);
     
-    // Replay using context
-    playRadio(station);
-    
-    setIsLoading(false);
+    try {
+      const streamUrl = await initializeStream(station.streamUrl, station.genre);
+      playRadio({ ...station, streamUrl });
+    } catch (err) {
+      setError('Unable to play this station. Please try again later.');
+      console.error('Playback retry failed:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleFavorite = () => {
@@ -144,32 +181,24 @@ const RadioPlayer = ({ station }) => {
 
   return (
     <div className="bg-gray-800 rounded-lg p-4 sm:p-6 shadow-xl">
-      {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-sm text-red-200">
-          <div className="flex justify-between items-center flex-wrap gap-2">
-            <span>{error}</span>
-            <button 
-              onClick={retryPlayback}
-              className="bg-red-700 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Trying...' : 'Retry'}
-            </button>
-          </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-600"></div>
         </div>
-      )}
-      
-      {station ? (
+      ) : error ? (
+        <ErrorMessage message={error} onRetry={retryPlayback} />
+      ) : (
+        station ? (
         <>
           <div className="flex items-center space-x-4">
             <img
-              src={station.logo || '/placeholder-radio.svg'}
+              src={getProxiedImageUrl(station.logo) || getFallbackImageUrl(station.name)}
               alt={station.name}
               className="w-16 h-16 rounded-lg object-contain bg-gray-700"
               onError={(e) => {
                 console.log('Image failed to load:', e.target.src);
                 e.target.onerror = null; // Prevent infinite error loops
-                e.target.src = '/placeholder-radio.svg';
+                e.target.src = getFallbackImageUrl(station.name);
               }}
             />
             <div className="flex-1">
@@ -259,9 +288,11 @@ const RadioPlayer = ({ station }) => {
           <h2 className="text-xl font-semibold mb-2">Select a Station</h2>
           <p className="text-gray-400">Choose a radio station to start listening</p>
         </div>
-      )}
+      ))}
     </div>
   );
 };
+
+
 
 export default RadioPlayer;

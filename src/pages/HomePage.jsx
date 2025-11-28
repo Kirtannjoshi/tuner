@@ -1,218 +1,165 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HeartIcon, RadioIcon, TvIcon, TrophyIcon } from '@heroicons/react/24/outline';
-import { getAllStations } from '../services/radioService';
-import { getAllChannels } from '../services/tvService';
-import { getLiveMatches, getUpcomingMatches, getPastMatches } from '../services/iplService';
-import MatchCard from '../components/ipl/MatchCard';
-import { PlayerContext } from '../contexts/PlayerContext';
-import '../styles/scrollbar.css';
+import { PlayIcon, RadioIcon, TvIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { getHomeRecommendations } from '../services/recommendationService';
+import { getTvChannelsFromSource } from '../services/tvService';
+import { usePlayer } from '../contexts/PlayerContext';
+
+import Header from '../components/layout/Header';
 
 const HomePage = () => {
-  const [topRadioStations, setTopRadioStations] = useState([]);
-  const [topTvChannels, setTopTvChannels] = useState([]);
-  const [liveMatches, setLiveMatches] = useState([]);
-  const [upcomingMatches, setUpcomingMatches] = useState([]);
-  const [pastMatches, setPastMatches] = useState([]);
+  const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { playRadio, playTv } = useContext(PlayerContext);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const { playRadio, playTv, setPlayerMode } = usePlayer();
   const navigate = useNavigate();
+
+  // Categories for the scrollable bar
+  const categories = [
+    'all', 'news', 'sports', 'music', 'movies', 'entertainment',
+    'documentary', 'kids', 'lifestyle', 'adult', 'religious'
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch data in parallel
-        const [stations, channels, live, upcoming, past] = await Promise.all([
-          getAllStations(),
-          getAllChannels(),
-          getLiveMatches(),
-          getUpcomingMatches(),
-          getPastMatches()
-        ]);
-        
-        // Get a selection of popular stations/channels
-        setTopRadioStations(stations.slice(0, 10));
-        setTopTvChannels(channels.slice(0, 10));
-        setLiveMatches(live);
-        setUpcomingMatches(upcoming.slice(0, 3));
-        setPastMatches(past.slice(0, 3));
+        let data = [];
+        if (selectedCategory === 'all') {
+          // Fetch 30 mixed items (Radio + TV)
+          data = await getHomeRecommendations(30);
+        } else {
+          // Fetch specific category (TV only for now as Radio categories differ)
+          // Using IPTV Global source
+          const iptvGlobalUrl = 'https://iptv-org.github.io/iptv/index.m3u';
+          data = await getTvChannelsFromSource({
+            source: iptvGlobalUrl,
+            category: selectedCategory,
+            limit: 30
+          });
+          // Add type 'tv' to these items
+          data = data.map(item => ({ ...item, type: 'tv' }));
+        }
+        setItems(data);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    
-    fetchData();
-  }, []);
 
-  // Helper to handle media clicks - directly play and navigate to appropriate page
-  const handleMediaClick = (item, type) => {
-    if (type === 'radio') {
-      playRadio(item);
-      navigate('/radio');
-    } else if (type === 'tv') {
-      navigate(`/tv?id=${item.id}`);
+    fetchData();
+  }, [selectedCategory]);
+
+  const handleMediaClick = (media) => {
+    // Play the media to set context
+    if (media.type === 'radio') {
+      playRadio(media);
+      navigate(`/watch/radio/${media.id}`);
+    } else {
+      playTv(media);
+      navigate(`/watch/tv/${media.id}`);
     }
   };
 
-  // Helper to render media cards with consistent style
-  const renderMediaCard = (item, type) => (
-    <div 
-      key={item.id}
-      onClick={() => handleMediaClick(item, type)}
-      className="snap-start flex-shrink-0 w-40 bg-gray-800 rounded-lg overflow-hidden shadow-md hover:bg-gray-700 transition-colors cursor-pointer"
+  const MediaCard = ({ item }) => (
+    <div
+      onClick={() => handleMediaClick(item)}
+      className="group cursor-pointer transition-all"
     >
-      <div className="h-32 bg-gray-700 relative">
-        <img 
-          src={item.logo || `/placeholder-${type}.svg`}
+      {/* Thumbnail - Ultra Small */}
+      <div className="relative aspect-video bg-black rounded-md overflow-hidden mb-1">
+        <img
+          src={item.logo || '/placeholder.svg'}
           alt={item.name}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = `/placeholder-${type}.svg`;
-          }}
+          className="w-full h-full object-contain p-1"
+          onError={(e) => e.target.src = item.type === 'radio'
+            ? 'https://cdn-icons-png.flaticon.com/512/565/565422.png'
+            : 'https://cdn-icons-png.flaticon.com/512/4409/4409506.png'}
         />
-        <div className="absolute top-2 left-2 text-lg">
-          {item.countryFlag}
+
+        {/* Live Badge */}
+        <div className="absolute top-0.5 left-0.5 px-0.5 py-[1px] bg-red-600 rounded-sm text-[6px] font-bold text-white uppercase tracking-wider">
+          Live
+        </div>
+
+        {/* Type Badge (Radio/TV) */}
+        <div className={`absolute top-0.5 right-0.5 px-1 py-[1px] rounded-sm text-[6px] font-bold text-white uppercase tracking-wider flex items-center gap-0.5 ${item.type === 'radio' ? 'bg-purple-600' : 'bg-blue-600'
+          }`}>
+          {item.type === 'radio' ? <RadioIcon className="h-2 w-2" /> : <TvIcon className="h-2 w-2" />}
+          {item.type === 'radio' ? 'Radio' : 'TV'}
+        </div>
+
+        {/* Hover Play Overlay */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+            <PlayIcon className="h-4 w-4 text-white ml-0.5" />
+          </div>
         </div>
       </div>
-      <div className="p-3">
-        <h3 className="font-semibold text-sm truncate">{item.name}</h3>
-        <p className="text-xs text-gray-400 mt-1 truncate">{item.genre}</p>
+
+      {/* Info - Ultra Small */}
+      <div className="flex gap-1">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-white text-[10px] truncate mb-0 group-hover:text-pink-400 transition-colors leading-tight">
+            {item.name}
+          </h3>
+          <p className="text-[9px] text-gray-500 truncate leading-tight">
+            {item.genre || item.country || 'General'}
+          </p>
+        </div>
       </div>
     </div>
-  );
-
-  // Render skeleton loader for loading state
-  const renderSkeletons = (count) => (
-    Array(count).fill(0).map((_, i) => (
-      <div key={i} className="snap-start flex-shrink-0 w-40 bg-gray-800 rounded-lg overflow-hidden animate-pulse">
-        <div className="h-32 bg-gray-700"></div>
-        <div className="p-3">
-          <div className="h-4 bg-gray-700 rounded mb-2"></div>
-          <div className="h-3 bg-gray-700 rounded w-2/3"></div>
-        </div>
-      </div>
-    ))
   );
 
   return (
-    <div className="space-y-8 pb-20">
-      {/* Hero section */}
-      <div className="bg-gradient-to-r from-pink-600 to-purple-600 rounded-lg p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">Welcome to Tuner</h1>
-        <p className="opacity-90">Stream your favorite radio stations and TV channels from around the world.</p>
+    <div className="space-y-4 pb-20 lg:pb-8 overflow-x-hidden w-full">
+      {/* Header with Search and Categories */}
+      <Header />
+
+      {/* Category Pills - Horizontal Scroll with Ocean Square Bar */}
+      <div className="w-full overflow-hidden">
+        <div
+          className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-ocean touch-pan-x w-full"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {categories.map(category => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-all flex-shrink-0 uppercase tracking-wide ${selectedCategory === category
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg shadow-purple-500/20'
+                : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 border border-gray-700/50'
+                }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
       </div>
-      
-      {/* Featured Radio Stations */}
-      <section>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-xl font-semibold flex items-center">
-            <RadioIcon className="h-5 w-5 mr-2 text-pink-500" />
-            Radio Stations
-          </h2>
-          <button onClick={() => navigate('/radio')} className="text-sm text-pink-500 hover:text-pink-400">
-            View All →
-          </button>
-        </div>
-        
-        <div className="overflow-x-auto pb-4 snap-x flex gap-3 scrollbar-hide">
-          {isLoading ? renderSkeletons(5) : (
-            topRadioStations.map(station => renderMediaCard(station, 'radio'))
-          )}
-        </div>
-      </section>
-      
-      {/* Featured TV Channels */}
-      <section>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-xl font-semibold flex items-center">
-            <TvIcon className="h-5 w-5 mr-2 text-pink-500" />
-            TV Channels
-          </h2>
-          <button onClick={() => navigate('/tv')} className="text-sm text-pink-500 hover:text-pink-400">
-            View All →
-          </button>
-        </div>
-        
-        <div className="overflow-x-auto pb-4 snap-x flex gap-3 scrollbar-hide">
-          {isLoading ? renderSkeletons(5) : (
-            topTvChannels.map(channel => renderMediaCard(channel, 'tv'))
-          )}
-        </div>
-      </section>
-      
-      {/* IPL Section */}
-      <section>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-xl font-semibold flex items-center">
-            <TrophyIcon className="h-5 w-5 mr-2 text-pink-500" />
-            IPL 2024
-          </h2>
-          <button onClick={() => navigate('/ipl')} className="text-sm text-pink-500 hover:text-pink-400">
-            View All →
-          </button>
-        </div>
 
-        {liveMatches.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-medium mb-2 flex items-center">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></span>
-              Live Matches
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {liveMatches.map(match => (
-                <MatchCard key={match.matchId} match={match} />
-              ))}
-            </div>
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="text-lg font-medium mb-2">Upcoming Matches</h3>
-            <div className="space-y-3">
-              {upcomingMatches.map(match => (
-                <MatchCard key={match.matchId} match={match} />
-              ))}
-            </div>
+      {/* Combined Grid - Ultra Compact */}
+      {
+        isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 w-full">
+            {[...Array(21)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-video bg-gray-800 rounded-md mb-1"></div>
+                <div className="h-2.5 bg-gray-800 rounded mb-0.5"></div>
+                <div className="h-2 bg-gray-800 rounded w-2/3"></div>
+              </div>
+            ))}
           </div>
-          <div>
-            <h3 className="text-lg font-medium mb-2">Recent Results</h3>
-            <div className="space-y-3">
-              {pastMatches.map(match => (
-                <MatchCard key={match.matchId} match={match} />
-              ))}
-            </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 w-full">
+            {items.map((item, index) => (
+              <MediaCard key={`${item.id}-${index}`} item={item} />
+            ))}
           </div>
-        </div>
-      </section>
-
-      {/* Browse by Category */}
-      <section>
-        <h2 className="text-xl font-semibold mb-3">Browse by Category</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          <div onClick={() => navigate('/radio?genre=pop')} className="bg-blue-600 rounded-lg p-4 text-white hover:bg-blue-700 transition-colors cursor-pointer">
-            <h3 className="font-medium">Pop</h3>
-            <p className="text-sm opacity-80">Radio</p>
-          </div>
-          <div onClick={() => navigate('/radio?genre=news')} className="bg-red-600 rounded-lg p-4 text-white hover:bg-red-700 transition-colors cursor-pointer">
-            <h3 className="font-medium">News</h3>
-            <p className="text-sm opacity-80">Radio</p>
-          </div>
-          <div onClick={() => navigate('/tv?genre=news')} className="bg-green-600 rounded-lg p-4 text-white hover:bg-green-700 transition-colors cursor-pointer">
-            <h3 className="font-medium">News</h3>
-            <p className="text-sm opacity-80">TV</p>
-          </div>
-          <div onClick={() => navigate('/tv?genre=entertainment')} className="bg-purple-600 rounded-lg p-4 text-white hover:bg-purple-700 transition-colors cursor-pointer">
-            <h3 className="font-medium">Entertainment</h3>
-            <p className="text-sm opacity-80">TV</p>
-          </div>
-        </div>
-      </section>
-    </div>
+        )
+      }
+    </div >
   );
 };
 

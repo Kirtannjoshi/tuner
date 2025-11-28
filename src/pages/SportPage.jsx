@@ -1,246 +1,84 @@
-import { useState, useEffect } from 'react';
-import { MagnifyingGlassIcon, TrophyIcon } from '@heroicons/react/24/outline';
-import { getLiveMatches, getUpcomingMatches, getPastMatches, getPointsTable } from '../services/iplService';
-import MatchCard from '../components/ipl/MatchCard';
-import PointsTable from '../components/ipl/PointsTable';
+import { TrophyIcon } from '@heroicons/react/24/solid';
 
 const SportPage = () => {
-  const [selectedSport, setSelectedSport] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // Sports categories with IPL featured
-  const sportsCategories = [
-    'all',
-    'ipl',
-    'cricket',
-    'football',
-    'basketball',
-    'tennis',
-    'formula1',
-    'baseball',
-    'rugby'
-  ];
-
-  // IPL specific states
-  const [iplData, setIplData] = useState({
-    liveMatches: [],
-    upcomingMatches: [],
-    pastMatches: [],
-    pointsTable: []
-  });
-
-  // Sample sports data structure
-  const [sportsData, setSportsData] = useState({
-    liveMatches: [],
-    upcomingMatches: [],
-    recentResults: []
-  });
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        if (selectedSport === 'ipl') {
-          // Fetch IPL specific data
-          const [live, upcoming, past, points] = await Promise.all([
-            getLiveMatches(),
-            getUpcomingMatches(),
-            getPastMatches(),
-            getPointsTable()
-          ]);
-          
-          setIplData({
-            liveMatches: live,
-            upcomingMatches: upcoming,
-            pastMatches: past,
-            pointsTable: points
-          });
-        } else {
-          // Fetch general sports data
-          const mockData = {
-            liveMatches: [
-              { id: 1, title: 'IND vs AUS', sport: 'cricket', status: 'LIVE', score: '299/5' },
-              { id: 2, title: 'Real Madrid vs Barcelona', sport: 'football', status: 'LIVE', score: '2-1' }
-            ],
-            upcomingMatches: [
-              { id: 3, title: 'Lakers vs Warriors', sport: 'basketball', date: '2024-03-25', time: '19:00' },
-              { id: 4, title: 'Djokovic vs Nadal', sport: 'tennis', date: '2024-03-26', time: '15:30' }
-            ],
-            recentResults: [
-              { id: 5, title: 'Ferrari vs Mercedes', sport: 'formula1', result: 'Ferrari won by 5.2s' },
-              { id: 6, title: 'Yankees vs Red Sox', sport: 'baseball', result: 'Yankees won 6-4' }
-            ]
-          };
-          setSportsData(mockData);
-        }
-      } catch (err) {
-        setError('Failed to load sports data');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [selectedSport]);
-
-  const handleSportChange = (e) => {
-    setSelectedSport(e.target.value);
-  };
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    // Implement search functionality
-    console.log('Searching for:', searchQuery);
-  };
-
-  if (error) {
     return (
-      <div className="text-center py-10">
-        <p className="text-red-500">{error}</p>
-      </div>
-    );
-  }
+        <div className="min-h-screen flex items-center justify-center p-8">
+            <div className="text-center max-w-2xl">
+                {/* Icon */}
+                <div className="mb-8 flex justify-center">
+                    <div className="relative">
+                        <div className="w-32 h-32 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center shadow-2xl shadow-pink-500/25 animate-pulse">
+                            <TrophyIcon className="h-16 w-16 text-white" />
+                        </div>
+                        {/* Glow effect */}
+                        <div className="absolute inset-0 w-32 h-32 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full blur-2xl opacity-50 animate-pulse"></div>
+                    </div>
+                </div>
 
-  return (
-    <div className="space-y-6">
-      {/* Search and Filter Section */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <form onSubmit={handleSearchSubmit} className="relative flex-1">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search sports events..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-pink-500"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </form>
-        
-        <select
-          value={selectedSport}
-          onChange={handleSportChange}
-          className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-pink-500"
-        >
-          {sportsCategories.map(sport => (
-            <option key={sport} value={sport}>
-              {sport.charAt(0).toUpperCase() + sport.slice(1)}
-            </option>
-          ))}
-        </select>
-      </div>
+                {/* Heading */}
+                <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient">
+                    Coming Soon
+                </h1>
 
-      {/* IPL Section */}
-      {selectedSport === 'ipl' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6">
-            <div className="flex items-center space-x-3 mb-2">
-              <TrophyIcon className="h-8 w-8" />
-              <h1 className="text-2xl font-bold">IPL 2024</h1>
+                {/* Subheading */}
+                <p className="text-2xl text-gray-300 mb-6 font-medium">
+                    Live Sports Streaming
+                </p>
+
+                {/* Description */}
+                <p className="text-gray-400 text-lg mb-8 leading-relaxed">
+                    We're working on bringing you live sports action from around the world.
+                    Watch your favorite matches, tournaments, and sporting events right here on Tuner.
+                </p>
+
+                {/* Features */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/30">
+                        <div className="text-4xl mb-3">🏏</div>
+                        <h3 className="text-white font-semibold mb-2">Cricket</h3>
+                        <p className="text-gray-400 text-sm">IPL, World Cup & more</p>
+                    </div>
+                    <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/30">
+                        <div className="text-4xl mb-3">⚽</div>
+                        <h3 className="text-white font-semibold mb-2">Football</h3>
+                        <p className="text-gray-400 text-sm">Premier League, La Liga</p>
+                    </div>
+                    <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/30">
+                        <div className="text-4xl mb-3">🏀</div>
+                        <h3 className="text-white font-semibold mb-2">Basketball</h3>
+                        <p className="text-gray-400 text-sm">NBA, Euroleague</p>
+                    </div>
+                </div>
+
+                {/* CTA */}
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full text-white font-medium shadow-lg shadow-pink-500/25">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    <span>In Development</span>
+                </div>
+
+                {/* Back to Home */}
+                <div className="mt-8">
+                    <a
+                        href="/"
+                        className="text-pink-400 hover:text-pink-300 transition-colors font-medium"
+                    >
+                        ← Back to Home
+                    </a>
+                </div>
             </div>
-            <p className="text-gray-200">Follow all the action from Indian Premier League 2024</p>
-          </div>
 
-          {/* Points Table */}
-          <section className="bg-gray-800 rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-4">Points Table</h2>
-            <PointsTable teams={iplData.pointsTable} />
-          </section>
+            <style jsx>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+      `}</style>
         </div>
-      )}
-
-      {/* Live Matches Section */}
-      <section className="bg-gray-800 rounded-lg p-4">
-        <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></span>
-          Live Matches
-        </h2>
-        {isLoading ? (
-          <div className="animate-pulse space-y-4">
-            {[1, 2].map(i => (
-              <div key={i} className="h-20 bg-gray-700 rounded-lg"></div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {(selectedSport === 'ipl' ? iplData.liveMatches : sportsData.liveMatches).map(match => (
-              <div key={match.id} className="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">{match.title}</h3>
-                    <p className="text-sm text-gray-400">{match.sport}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-pink-500 font-semibold">{match.score}</span>
-                    <p className="text-sm text-gray-400">{match.status}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Upcoming Matches Section */}
-      <section className="bg-gray-800 rounded-lg p-4">
-        <h2 className="text-xl font-semibold mb-4">Upcoming Matches</h2>
-        {isLoading ? (
-          <div className="animate-pulse space-y-4">
-            {[1, 2].map(i => (
-              <div key={i} className="h-20 bg-gray-700 rounded-lg"></div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {(selectedSport === 'ipl' ? iplData.upcomingMatches : sportsData.upcomingMatches).map(match => (
-              <div key={match.id} className="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">{match.title}</h3>
-                    <p className="text-sm text-gray-400">{match.sport}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-400">{match.date}</p>
-                    <p className="text-sm text-pink-500">{match.time}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Recent Results Section */}
-      <section className="bg-gray-800 rounded-lg p-4">
-        <h2 className="text-xl font-semibold mb-4">Recent Results</h2>
-        {isLoading ? (
-          <div className="animate-pulse space-y-4">
-            {[1, 2].map(i => (
-              <div key={i} className="h-20 bg-gray-700 rounded-lg"></div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {(selectedSport === 'ipl' ? iplData.pastMatches : sportsData.recentResults).map(match => (
-              <div key={match.id} className="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">{match.title}</h3>
-                    <p className="text-sm text-gray-400">{match.sport}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-pink-500">{match.result}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  );
+    );
 };
 
 export default SportPage;

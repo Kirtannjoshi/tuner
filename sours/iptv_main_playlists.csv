@@ -1,0 +1,12 @@
+Source,URL,Channels,Description
+IPTV-Org (Main - All Channels),https://iptv-org.github.io/iptv/index.m3u,"10,000+",Comprehensive collection of all publicly available channels
+IPTV-Org (By Country),https://iptv-org.github.io/iptv/index.country.m3u,"10,000+",Channels grouped by country
+IPTV-Org (By Category),https://iptv-org.github.io/iptv/index.category.m3u,"10,000+","Channels grouped by category (Sports, News, Movies, etc.)"
+IPTV-Org (By Language),https://iptv-org.github.io/iptv/index.language.m3u,"10,000+",Channels grouped by language
+Free-TV (Quality Focused),https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8,500+,Quality-focused free-to-air channels (HD priority)
+Plex TV,https://i.mjh.nz/Plex/all.m3u8,300+,Plex TV free channels
+Stirr TV,https://i.mjh.nz/Stirr/all.m3u8,200+,Stirr TV platform channels
+Samsung TV,https://www.apsattv.com/ssungusa.m3u,250+,Samsung TV Plus channels
+TCL TV,https://www.apsattv.com/tcl.m3u,200+,TCL TV channels
+Roku Channel,https://www.apsattv.com/rok.m3u,300+,The Roku Channel free streams
+Tubi TV,https://tvpass.org/playlist/m3u,250+,Tubi TV live channels

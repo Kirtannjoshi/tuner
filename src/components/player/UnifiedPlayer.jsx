@@ -1,866 +1,311 @@
-import { useState, useEffect, useRef, useContext } from 'react';
-import Hls from 'hls.js';
+import React, { useRef, useEffect, useState } from 'react';
+import { Play, Pause, X, Maximize2, Minimize2, Music } from 'lucide-react';
+import { usePlayer } from '../../contexts/PlayerContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  HeartIcon, SpeakerWaveIcon, ShareIcon, PlayIcon, PauseIcon,
-  ArrowsPointingOutIcon, ArrowsPointingInIcon, XMarkIcon, ClockIcon
-} from '@heroicons/react/24/outline';
-import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
-import { PlayerContext } from '../../contexts/PlayerContext';
-import { addFavoriteStation, removeFavoriteStation, isStationFavorite } from '../../services/favoritesService';
-import { addFavoriteChannel, removeFavoriteChannel, isChannelFavorite } from '../../services/favoritesService';
+import Hls from 'hls.js';
 
+/**
+ * UnifiedPlayer - Handles both Mini and PiP modes
+ * Persists media playback during transitions
+ */
 const UnifiedPlayer = () => {
-  // Get the current route and media info
-  const location = useLocation();
-  const navigate = useNavigate();
-  const currentPath = location.pathname;
-  
-  // Get player context
-  const context = useContext(PlayerContext);
-  if (!context) return null;
-  
-  const { 
-    currentMedia, 
-    isPlaying,
-    setIsPlaying: updatePlayingState, 
-    togglePlayPause, 
-    stopMedia,
-    playRadio,
-    playTv, 
-    volume, 
-    setPlayerVolume,
-    getRecentMedia 
-  } = context;
-  
-  // If no media is playing, don't render anything
-  if (!currentMedia) return null;
-  
-  // States for player functionality
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [isPipMode, setIsPipMode] = useState(false);
-  const [pipPosition, setPipPosition] = useState({ x: 20, y: 20 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [showRecents, setShowRecents] = useState(false);
-  const [metadata, setMetadata] = useState({ title: 'Now Playing', artist: '' });
-  const [waveformValues, setWaveformValues] = useState(Array(20).fill(0.1));
-  const [showControls, setShowControls] = useState(true);
-  const [isVideoLoading, setIsVideoLoading] = useState(false);
-  const [volumeChangeInProgress, setVolumeChangeInProgress] = useState(false);
-  
-  // Refs
-  const videoRef = useRef(null);
-  const hlsRef = useRef(null);
-  const pipRef = useRef(null);
-  const audioRef = useRef(null);
-  const animationRef = useRef(null);
-  const controlsTimerRef = useRef(null);
-  const playbackTimeoutRef = useRef(null);
-  
-  // Determine if we should show the main player or mini player
-  const isMainView = (currentMedia.type === 'radio' && currentPath === '/radio') || 
-                    (currentMedia.type === 'tv' && currentPath === '/tv');
-  
-  // Initialize player state
-  useEffect(() => {
-    if (!currentMedia) return;
-    
-    // Set favorite status
-    if (currentMedia.type === 'radio') {
-      setIsFavorite(isStationFavorite(currentMedia.id));
-      setMetadata({ 
-        title: 'Now Playing', 
-        artist: currentMedia.name 
-      });
-    } else if (currentMedia.type === 'tv') {
-      setIsFavorite(isChannelFavorite(currentMedia.id));
-    }
-    
-    // If we're in PIP mode and navigate to TV page, exit PIP mode
-    if (isPipMode && currentMedia.type === 'tv' && currentPath === '/tv') {
-      setIsPipMode(false);
-    }
-  }, [currentMedia, currentPath]);
-  
-  // HLS TV setup
-  useEffect(() => {
-    if (currentMedia?.type === 'tv' && videoRef.current) {
-      const setupHls = () => {
-        setIsVideoLoading(true);
-        
-        if (Hls.isSupported()) {
-          if (hlsRef.current) {
-            hlsRef.current.destroy();
-          }
+    const location = useLocation();
+    const navigate = useNavigate();
+    const videoRef = useRef(null);
+    const audioRef = useRef(null);
+    const hlsRef = useRef(null);
 
-          hlsRef.current = new Hls({
-            maxBufferLength: 120,
-            maxMaxBufferLength: 240,
-            maxBufferSize: 120 * 1000 * 1000,
-            maxBufferHole: 0.5,
-            highBufferWatchdogPeriod: 3,
-            lowLatencyMode: false,
-            stallDetectionMode: 2,
-            testBandwidth: true
-          });
+    const {
+        currentMedia,
+        isPlaying,
+        togglePlayPause,
+        stopMedia,
+        playerMode,
+        setPlayerMode,
+        volume
+    } = usePlayer();
 
-          hlsRef.current.attachMedia(videoRef.current);
-          hlsRef.current.on(Hls.Events.MEDIA_ATTACHED, () => {
-            hlsRef.current.loadSource(currentMedia.streamUrl);
-            hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
-              setIsVideoLoading(false);
-              
-              // Clear any existing timeout
-              if (playbackTimeoutRef.current) {
-                clearTimeout(playbackTimeoutRef.current);
-              }
-              
-              // Only attempt playback if isPlaying is true and after a short delay
-              if (isPlaying) {
-                playbackTimeoutRef.current = setTimeout(() => {
-                  if (videoRef.current) {
-                    videoRef.current.play().catch(err => {
-                      console.error('Error playing video:', err);
-                    });
-                  }
-                }, 500); // 500ms delay to avoid AbortError
-              }
-            });
-          });
+    // Drag and Resize State
+    const [position, setPosition] = useState({ x: window.innerWidth - 340, y: window.innerHeight - 240 });
+    const [size, setSize] = useState({ width: 320, height: 180 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-          hlsRef.current.on(Hls.Events.ERROR, (_, data) => {
-            if (data.fatal) {
-              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                hlsRef.current.startLoad();
-              } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                hlsRef.current.recoverMediaError();
-              }
+    const isVideo = currentMedia?.type === 'tv';
+    const streamUrl = currentMedia?.streamUrl || currentMedia?.url;
+    const isOnWatchPage = location.pathname.startsWith('/watch/');
+
+    // Initialize media
+    useEffect(() => {
+        if (!currentMedia) return;
+
+        const element = isVideo ? videoRef.current : audioRef.current;
+        if (!element || !streamUrl) return;
+
+        // Check for HLS
+        if (streamUrl.includes('.m3u8') || (isVideo && Hls.isSupported())) {
+            if (Hls.isSupported()) {
+                if (hlsRef.current) {
+                    hlsRef.current.destroy();
+                }
+
+                const hls = new Hls({
+                    maxBufferLength: 30,
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                });
+
+                hlsRef.current = hls;
+                hls.loadSource(streamUrl);
+                hls.attachMedia(element);
+
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    if (isPlaying) element.play().catch(e => console.error(e));
+                });
+            } else if (element.canPlayType('application/vnd.apple.mpegurl')) {
+                element.src = streamUrl;
             }
-          });
-        } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-          // Native HLS support (Safari)
-          videoRef.current.src = currentMedia.streamUrl;
-          
-          // Clear any existing timeout
-          if (playbackTimeoutRef.current) {
-            clearTimeout(playbackTimeoutRef.current);
-          }
-          
-          if (isPlaying) {
-            playbackTimeoutRef.current = setTimeout(() => {
-              if (videoRef.current) {
-                videoRef.current.play().catch(console.error);
-              }
-            }, 500); // 500ms delay to avoid AbortError
-          }
+        } else {
+            element.src = streamUrl;
         }
-      };
 
-      setupHls();
-      
-      // Register video element with player context if on TV page
-      if (currentPath === '/tv') {
-        playTv(currentMedia, videoRef.current);
-      }
-    }
+        return () => {
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+            }
+        };
+    }, [streamUrl, isVideo, currentMedia]);
 
-    return () => {
-      if (playbackTimeoutRef.current) {
-        clearTimeout(playbackTimeoutRef.current);
-      }
-      
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-    };
-  }, [currentMedia, isPlaying, currentPath]);
+    // Sync Playback State
+    useEffect(() => {
+        if (!currentMedia) return;
+        const element = isVideo ? videoRef.current : audioRef.current;
+        if (!element) return;
 
-  // Radio waveform animation
-  useEffect(() => {
-    if (currentMedia?.type === 'radio' && isPlaying) {
-      const animateWaveform = () => {
-        setWaveformValues(prev => 
-          prev.map(() => Math.random() * 0.8 + 0.2)
-        );
-        animationRef.current = requestAnimationFrame(animateWaveform);
-      };
-      
-      animationRef.current = requestAnimationFrame(animateWaveform);
-      
-      return () => cancelAnimationFrame(animationRef.current);
-    }
-  }, [currentMedia, isPlaying]);
-
-  // Handle play state changes
-  useEffect(() => {
-    if (currentMedia?.type === 'tv' && videoRef.current) {
-      if (isPlaying) {
-        // Clear any existing timeout
-        if (playbackTimeoutRef.current) {
-          clearTimeout(playbackTimeoutRef.current);
+        if (isPlaying) {
+            element.play().catch(e => console.error("Play failed", e));
+        } else {
+            element.pause();
         }
-        
-        playbackTimeoutRef.current = setTimeout(() => {
-          if (videoRef.current) {
-            videoRef.current.play().catch(console.error);
-          }
-        }, 500); // 500ms delay to avoid AbortError
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isPlaying, currentMedia]);
+    }, [isPlaying, isVideo, currentMedia]);
 
-  // Apply volume changes
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.volume = volume;
-    }
-  }, [volume]);
-  
-  // PIP mode dragging
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleDrag);
-      document.addEventListener('mouseup', handleEndDrag);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleDrag);
-        document.removeEventListener('mouseup', handleEndDrag);
-      };
-    }
-  }, [isDragging]);
-  
-  // Auto-hide controls
-  useEffect(() => {
-    if (!isPlaying || !showControls || !isMainView) return;
-    
-    const hideControls = () => setShowControls(false);
-    
-    controlsTimerRef.current = setTimeout(hideControls, 3000);
-    
-    return () => {
-      if (controlsTimerRef.current) {
-        clearTimeout(controlsTimerRef.current);
-      }
-    };
-  }, [showControls, isPlaying, isMainView]);
+    // Sync Volume
+    useEffect(() => {
+        if (!currentMedia) return;
+        const element = isVideo ? videoRef.current : audioRef.current;
+        if (element) element.volume = volume;
+    }, [volume, isVideo, currentMedia]);
 
-  // Cleanup when component unmounts
-  useEffect(() => {
-    return () => {
-      if (playbackTimeoutRef.current) {
-        clearTimeout(playbackTimeoutRef.current);
-      }
-      if (controlsTimerRef.current) {
-        clearTimeout(controlsTimerRef.current);
-      }
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
+    // Media Session API for Background Play
+    useEffect(() => {
+        if (!currentMedia || !('mediaSession' in navigator)) return;
 
-  // Setup MediaSession API for mobile background playback
-  useEffect(() => {
-    if ('mediaSession' in navigator && currentMedia) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentMedia.name,
-        artist: currentMedia.type === 'radio' ? 'Internet Radio' : 'Live TV',
-        album: 'Tuner App',
-        artwork: [
-          { src: currentMedia.logo || '/tuner-logo.svg', sizes: '512x512', type: 'image/png' },
-        ]
-      });
-
-      // Set up media session action handlers
-      navigator.mediaSession.setActionHandler('play', () => {
-        if (!isPlaying) togglePlayPause();
-      });
-      
-      navigator.mediaSession.setActionHandler('pause', () => {
-        if (isPlaying) togglePlayPause();
-      });
-      
-      navigator.mediaSession.setActionHandler('stop', () => {
-        stopMedia();
-      });
-
-      // Update playback state
-      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-    }
-
-    // Request wake lock to prevent screen from turning off
-    const requestWakeLock = async () => {
-      if ('wakeLock' in navigator && isPlaying) {
-        try {
-          const wakeLock = await navigator.wakeLock.request('screen');
-          return wakeLock;
-        } catch (err) {
-          console.error('Wake Lock error:', err);
-        }
-      }
-      return null;
-    };
-
-    let wakeLockObj = null;
-    if (isPlaying) {
-      requestWakeLock().then(lock => {
-        wakeLockObj = lock;
-      });
-    }
-
-    return () => {
-      if (wakeLockObj) {
-        wakeLockObj.release().catch(err => {
-          console.error('Error releasing wake lock:', err);
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: currentMedia.name,
+            artist: currentMedia.genre || 'Tuner Stream',
+            artwork: [
+                { src: currentMedia.logo || currentMedia.image || '/placeholder.svg', sizes: '96x96', type: 'image/png' },
+                { src: currentMedia.logo || currentMedia.image || '/placeholder.svg', sizes: '128x128', type: 'image/png' },
+                { src: currentMedia.logo || currentMedia.image || '/placeholder.svg', sizes: '192x192', type: 'image/png' },
+                { src: currentMedia.logo || currentMedia.image || '/placeholder.svg', sizes: '512x512', type: 'image/png' },
+            ]
         });
-      }
+
+        navigator.mediaSession.setActionHandler('play', () => {
+            if (!isPlaying) togglePlayPause();
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+            if (isPlaying) togglePlayPause();
+        });
+        navigator.mediaSession.setActionHandler('stop', () => {
+            stopMedia();
+        });
+
+        return () => {
+            navigator.mediaSession.setActionHandler('play', null);
+            navigator.mediaSession.setActionHandler('pause', null);
+            navigator.mediaSession.setActionHandler('stop', null);
+        };
+    }, [currentMedia, isPlaying, togglePlayPause, stopMedia]);
+
+    // Handle Window Resize
+    useEffect(() => {
+        const handleResize = () => {
+            setPosition(prev => ({
+                x: Math.min(prev.x, window.innerWidth - size.width - 20),
+                y: Math.min(prev.y, window.innerHeight - size.height - 20)
+            }));
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [size]);
+
+    // Drag Handlers
+    const handleMouseDown = (e) => {
+        if (playerMode !== 'pip') return;
+        setIsDragging(true);
+        setDragOffset({
+            x: e.clientX - position.x,
+            y: e.clientY - position.y
+        });
     };
-  }, [currentMedia, isPlaying, togglePlayPause, stopMedia]);
 
-  const handleStartDrag = (e) => {
-    if (!pipRef.current) return;
-    
-    setIsDragging(true);
-    const rect = pipRef.current.getBoundingClientRect();
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
-  };
+    const handleMouseMove = (e) => {
+        if (!isDragging) return;
 
-  const handleDrag = (e) => {
-    if (!isDragging) return;
-    
-    // Calculate new position while keeping the player within the viewport
-    const newX = Math.max(0, Math.min(window.innerWidth - 240, e.clientX - dragOffset.x));
-    const newY = Math.max(0, Math.min(window.innerHeight - 160, e.clientY - dragOffset.y));
-    
-    setPipPosition({ x: newX, y: newY });
-  };
+        const newX = e.clientX - dragOffset.x;
+        const newY = e.clientY - dragOffset.y;
 
-  const handleEndDrag = () => {
-    setIsDragging(false);
-  };
+        // Boundary checks
+        const boundedX = Math.max(0, Math.min(window.innerWidth - size.width, newX));
+        const boundedY = Math.max(0, Math.min(window.innerHeight - size.height, newY));
 
-  const toggleFavorite = () => {
-    if (!currentMedia) return;
-    
-    if (currentMedia.type === 'radio') {
-      if (isFavorite) {
-        removeFavoriteStation(currentMedia.id);
-      } else {
-        addFavoriteStation(currentMedia);
-      }
-    } else if (currentMedia.type === 'tv') {
-      if (isFavorite) {
-        removeFavoriteChannel(currentMedia.id);
-      } else {
-        addFavoriteChannel(currentMedia);
-      }
-    }
-    
-    setIsFavorite(!isFavorite);
-  };
+        setPosition({ x: boundedX, y: boundedY });
+    };
 
-  const handleShareClick = () => {
-    if (!currentMedia) return;
-    
-    const shareTitle = currentMedia.type === 'radio' 
-      ? `Listen to ${currentMedia.name} on TUNER`
-      : `Watch ${currentMedia.name} on TUNER`;
-      
-    const shareText = `Check out ${currentMedia.name} on TUNER, a free streaming platform.`;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: shareTitle,
-        text: shareText,
-        url: window.location.href,
-      }).catch(err => console.log('Error sharing:', err));
-    } else {
-      navigator.clipboard.writeText(window.location.href)
-        .then(() => alert('Link copied to clipboard!'))
-        .catch(err => console.error('Error copying to clipboard:', err));
-    }
-  };
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
 
-  const goToMediaPage = () => {
-    navigate(`/${currentMedia.type}?id=${currentMedia.id}`);
-    if (isPipMode) {
-      setIsPipMode(false);
-    }
-  };
+    useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, dragOffset]);
 
-  const togglePipMode = () => {
-    if (currentMedia.type === 'tv') {
-      setIsPipMode(!isPipMode);
-    }
-  };
+    // If no media or player is hidden/full, don't render (or render null)
+    if (!currentMedia || playerMode === 'hidden' || playerMode === 'full') return null;
 
-  const handleRecentClick = (media) => {
-    if (media.type === 'radio') {
-      navigate(`/radio?id=${media.id}`);
-    } else {
-      navigate(`/tv?id=${media.id}`);
-    }
-    setShowRecents(false);
-  };
+    // If we are on the watch page, hide this player
+    if (isOnWatchPage) return null;
 
-  const handleMouseMove = () => {
-    if (isPlaying && isMainView && currentMedia.type === 'tv') {
-      setShowControls(true);
-    }
-  };
-  
-  const handleVideoClick = () => {
-    if (!currentMedia || currentMedia.type !== 'tv') return;
-    
-    if (showControls) {
-      togglePlayPause();
-    } else {
-      setShowControls(true);
-    }
-  };
-  
-  // Handle playback state changes from video element
-  const handleVideoPlay = () => {
-    if (updatePlayingState && !isPlaying) {
-      updatePlayingState(true);
-    }
-  };
-  
-  const handleVideoPause = () => {
-    if (updatePlayingState && isPlaying) {
-      updatePlayingState(false);
-    }
-  };
-  
-  // Add this enhanced volume control handler function before the handleStartDrag function
-  const handleVolumeChange = (e) => {
-    const newVolume = parseFloat(e.target.value);
-    
-    // Mark that volume change is in progress
-    setVolumeChangeInProgress(true);
-    
-    // Set volume with short debounce to avoid too many state updates
-    setPlayerVolume(newVolume);
-    
-    // Clear the in-progress flag after a short delay
-    setTimeout(() => {
-      setVolumeChangeInProgress(false);
-    }, 200);
-  };
-  
-  // Render Picture-in-Picture TV Player
-  if (currentMedia.type === 'tv' && isPipMode) {
+    const handleExpand = () => {
+        navigate(`/watch/${currentMedia.type}/${currentMedia.id}`);
+    };
+
+    // --- RENDER ---
+
+    // Common styles
+    const containerBase = "fixed z-50 transition-shadow duration-300 ease-in-out shadow-2xl overflow-hidden bg-gray-900 border border-gray-700/50";
+
+    // Mode specific styles
+    const getStyles = () => {
+        if (playerMode === 'pip') {
+            return {
+                left: `${position.x}px`,
+                top: `${position.y}px`,
+                width: `${size.width}px`,
+                height: `${size.height}px`,
+                borderRadius: '0.75rem',
+                cursor: isDragging ? 'grabbing' : 'grab'
+            };
+        } else {
+            return {
+                bottom: '60px', // Mobile bottom nav height
+                left: 0,
+                right: 0,
+                height: '64px',
+                borderTopLeftRadius: '0.75rem',
+                borderTopRightRadius: '0.75rem',
+                borderTopWidth: '1px'
+            };
+        }
+    };
+
     return (
-      <div 
-        ref={pipRef}
-        style={{
-          position: 'fixed',
-          left: `${pipPosition.x}px`,
-          top: `${pipPosition.y}px`,
-          width: '240px',
-          height: '160px',
-          zIndex: 50
-        }}
-        className="rounded-lg overflow-hidden shadow-xl bg-black border border-gray-700"
-      >
-        <div 
-          className="bg-gray-900/80 py-1.5 px-2 flex items-center justify-between cursor-move"
-          onMouseDown={handleStartDrag}
-        >
-          <div className="flex items-center">
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-1"></div>
-            <span className="text-xs font-medium truncate max-w-[120px]">
-              {currentMedia.name}
-            </span>
-          </div>
-          <div className="flex items-center">
-            <button 
-              onClick={togglePlayPause}
-              className="text-white p-1 hover:text-gray-300"
-            >
-              {isPlaying ? <PauseIcon className="h-3 w-3" /> : <PlayIcon className="h-3 w-3" />}
-            </button>
-            <button 
-              onClick={togglePipMode}
-              className="text-white p-1 hover:text-gray-300"
-            >
-              <ArrowsPointingOutIcon className="h-3 w-3" />
-            </button>
-            <button 
-              onClick={stopMedia}
-              className="text-white p-1 hover:text-gray-300"
-            >
-              <XMarkIcon className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-        <video 
-          ref={videoRef}
-          className="w-full h-[135px] bg-black cursor-pointer"
-          onClick={goToMediaPage}
-          onPlay={handleVideoPlay}
-          onPause={handleVideoPause}
-          playsInline
-        />
-      </div>
-    );
-  }
-  
-  // If we're on the main view, render the appropriate player
-  if (isMainView) {
-    if (currentMedia.type === 'radio') {
-      // Main Radio Player View
-      return (
-        <div className="bg-gray-800 rounded-lg p-4 sm:p-6 shadow-xl">
-          <div className="flex items-center space-x-4">
-            <img
-              src={currentMedia.logo || '/placeholder-radio.svg'}
-              alt={currentMedia.name}
-              className="w-16 h-16 rounded-lg object-contain bg-gray-700"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = '/placeholder-radio.svg';
-              }}
-            />
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold">{currentMedia.name}</h2>
-              <p className="text-gray-400">{currentMedia.genre} • {currentMedia.country}</p>
-              <p className="text-sm text-gray-500 mt-1">
-                {currentMedia.bitrate && `${currentMedia.bitrate} kbps`} 
-                {currentMedia.codec && currentMedia.bitrate && ' • '} 
-                {currentMedia.codec}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-400">
-                <p className="truncate">{metadata.title}</p>
-                <p className="truncate">{metadata.artist}</p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={toggleFavorite}
-                  className="text-gray-400 hover:text-white focus:outline-none p-2"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  {isFavorite ? (
-                    <HeartSolidIcon className="h-6 w-6 text-pink-500" />
-                  ) : (
-                    <HeartIcon className="h-6 w-6" />
-                  )}
-                </button>
-                <button 
-                  onClick={handleShareClick}
-                  className="text-gray-400 hover:text-white focus:outline-none p-2"
-                  aria-label="Share station"
-                >
-                  <ShareIcon className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-center mt-6">
-            <div className="flex justify-center items-center space-x-1 h-16 mb-2">
-              {waveformValues.map((value, index) => (
-                <div
-                  key={index}
-                  className={`w-1 ${isPlaying ? 'bg-pink-500' : 'bg-gray-600'} rounded-t`}
-                  style={{ height: `${Math.max(4, value * 100)}%` }}
-                ></div>
-              ))}
-            </div>
-
-            <button 
-              onClick={togglePlayPause}
-              className={`flex items-center justify-center h-16 w-16 rounded-full focus:outline-none transition-colors mb-4
-                ${isPlaying ? 'bg-pink-600 hover:bg-pink-700' : 'bg-pink-500 hover:bg-pink-600'}`}
-            >
-              {isPlaying ? (
-                <PauseIcon className="h-8 w-8 text-white" />
-              ) : (
-                <PlayIcon className="h-8 w-8 text-white" />
-              )}
-            </button>
-
-            <div className="w-full flex items-center space-x-4 px-2">
-              <SpeakerWaveIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={volume}
-                onChange={handleVolumeChange}
-                className="w-full accent-pink-500 h-2"
-                aria-label="Volume"
-              />
-            </div>
-          </div>
-        </div>
-      );
-    } else if (currentMedia.type === 'tv') {
-      // Main TV Player View
-      return (
         <div
-          className="relative bg-black rounded-lg overflow-hidden"
-          onMouseMove={handleMouseMove}
+            className={containerBase}
+            style={getStyles()}
+            onMouseDown={handleMouseDown}
         >
-          <div 
-            className="relative group" 
-            onClick={handleVideoClick}
-          >
-            <video
-              ref={videoRef}
-              className="w-full aspect-video cursor-pointer"
-              poster={currentMedia.logo || '/placeholder-tv.svg'}
-              playsInline
-              onPlay={handleVideoPlay}
-              onPause={handleVideoPause}
-            />
-            
-            {isVideoLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
-              </div>
-            )}
+            {/* Hidden Audio Element (always present for audio types) */}
+            {!isVideo && <audio ref={audioRef} />}
 
-            {showControls && (
-              <div 
-                className="absolute inset-0 flex flex-col justify-between p-2 sm:p-4 bg-gradient-to-b from-black/60 via-transparent to-black/80 transition-opacity duration-300"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Top Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
-                  {/* Channel Info */}
-                  <div className="flex items-center space-x-2">
-                    <img 
-                      src={currentMedia.logo || '/placeholder-tv.svg'} 
-                      alt={currentMedia.name}
-                      className="h-6 w-6 sm:h-8 sm:w-8 rounded bg-gray-800 object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/placeholder-tv.svg';
-                      }}
-                    />
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-                      <h3 className="text-white font-semibold text-sm sm:text-base truncate max-w-[200px]">
-                        {currentMedia.name}
-                      </h3>
-                      <span className="bg-pink-600 text-white text-xs px-2 py-0.5 rounded inline-flex items-center">
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1 animate-pulse"></span>
-                        LIVE
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Top Right Controls */}
-                  <div className="flex items-center space-x-2 sm:space-x-4">
-                    <button
-                      onClick={toggleFavorite}
-                      className="text-white hover:text-gray-300 transition-colors p-1.5"
-                      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                    >
-                      {isFavorite ? (
-                        <HeartSolidIcon className="h-5 w-5 sm:h-6 sm:w-6 text-pink-500" />
-                      ) : (
-                        <HeartIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                      )}
-                    </button>
-
-                    <button
-                      onClick={handleShareClick}
-                      className="text-white hover:text-gray-300 transition-colors p-1.5"
-                      aria-label="Share channel"
-                    >
-                      <ShareIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Center Play Button */}
-                <div className="hidden md:flex absolute inset-0 items-center justify-center pointer-events-none">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      togglePlayPause();
-                    }}
-                    className="bg-pink-500/80 hover:bg-pink-600 text-white p-4 rounded-full transform transition-all pointer-events-auto
-                             opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
-                    aria-label={isPlaying ? "Pause" : "Play"}
-                  >
-                    {isPlaying ? (
-                      <PauseIcon className="h-8 w-8" />
+            {playerMode === 'pip' ? (
+                // --- PiP Layout ---
+                <div className="relative w-full h-full group">
+                    {isVideo ? (
+                        <video ref={videoRef} className="w-full h-full object-cover pointer-events-none" muted={false} playsInline />
                     ) : (
-                      <PlayIcon className="h-8 w-8" />
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900 to-pink-900 pointer-events-none">
+                            <img
+                                src={currentMedia.logo || currentMedia.image}
+                                className="w-16 h-16 rounded-lg shadow-lg object-cover"
+                                onError={(e) => e.target.style.display = 'none'}
+                            />
+                            <Music className="absolute w-12 h-12 text-white/20" />
+                        </div>
                     )}
-                  </button>
+
+                    {/* PiP Controls Overlay */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <button onClick={(e) => { e.stopPropagation(); setPlayerMode('mini'); }} className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30">
+                            <Minimize2 className="w-5 h-5" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="p-3 bg-white rounded-full text-black hover:scale-105 transition-transform">
+                            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleExpand(); }} className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30">
+                            <Maximize2 className="w-5 h-5" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); stopMedia(); }} className="p-2 bg-red-500/20 rounded-full text-red-400 hover:bg-red-500/30">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
-
-                {/* Bottom Controls */}
-                <div className="flex flex-col space-y-2">
-                  {/* Control Buttons */}
-                  <div className="flex items-center justify-between">
-                    {/* Volume Control */}
-                    <div className="hidden sm:flex items-center space-x-2 group/volume">
-                      <SpeakerWaveIcon className="h-5 w-5 text-white" />
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={volume}
-                        onChange={handleVolumeChange}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-24 accent-pink-500"
-                        aria-label="Volume control"
-                      />
+            ) : (
+                // --- Mini Player Layout ---
+                <div className="w-full h-full flex items-center px-4 gap-4 bg-gray-900/95 backdrop-blur-xl">
+                    {/* Thumbnail */}
+                    <div
+                        className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-800 cursor-pointer hover:scale-105 transition-transform flex-shrink-0"
+                        onClick={handleExpand}
+                    >
+                        {isVideo ? (
+                            <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
+                        ) : (
+                            <img
+                                src={currentMedia.logo || currentMedia.image || '/placeholder.svg'}
+                                className="w-full h-full object-cover"
+                                onError={(e) => e.target.src = '/placeholder.svg'}
+                            />
+                        )}
                     </div>
 
-                    {/* Right Controls */}
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      {/* Toggle PIP mode */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          togglePipMode();
-                        }}
-                        className="text-white hover:text-gray-300 transition-colors p-1.5"
-                        aria-label="Picture-in-Picture"
-                      >
-                        <ArrowsPointingInIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                      </button>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={handleExpand}>
+                        <h3 className="font-semibold text-white truncate text-sm hover:text-pink-400 transition-colors">
+                            {currentMedia.name}
+                        </h3>
+                        <p className="text-xs text-gray-400 truncate">
+                            {currentMedia.genre || 'Live Stream'}
+                        </p>
                     </div>
-                  </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); togglePlayPause(); }} className="p-2 bg-pink-500 hover:bg-pink-600 rounded-full text-white shadow-lg hover:scale-105 transition-all">
+                            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                        </button>
+
+                        <button onClick={(e) => { e.stopPropagation(); setPlayerMode('pip'); }} className="hidden lg:block p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                            <Minimize2 className="w-5 h-5" />
+                        </button>
+
+                        <button onClick={(e) => { e.stopPropagation(); stopMedia(); }} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
-              </div>
             )}
-          </div>
         </div>
-      );
-    }
-  }
-  
-  // Mini Player (for any page that's not the media's main page)
-  return (
-    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-3 shadow-lg z-10">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <div 
-          onClick={goToMediaPage}
-          className="flex items-center flex-1 min-w-0 cursor-pointer"
-        >
-          <div className="h-10 w-10 bg-gray-700 rounded overflow-hidden flex-shrink-0 mr-3">
-            <img 
-              src={currentMedia.logo} 
-              alt={currentMedia.name}
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = `/placeholder-${currentMedia.type}.svg`;
-              }}
-            />
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-medium text-sm truncate">{currentMedia.name}</h3>
-            <p className="text-xs text-gray-400 truncate">
-              {currentMedia.country} • {currentMedia.type === 'radio' ? 'Radio' : 'TV'}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center">
-          <div className="hidden sm:flex items-center mr-3">
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={volume}
-              onChange={handleVolumeChange}
-              className="w-24 accent-pink-500"
-            />
-          </div>
-        
-          <button 
-            onClick={() => setShowRecents(!showRecents)}
-            className="rounded-full bg-gray-700 p-2 mr-2 hover:bg-gray-600 transition-colors relative"
-            aria-label="Recent media"
-          >
-            <ClockIcon className="h-5 w-5" />
-            {showRecents && (
-              <div className="absolute bottom-full right-0 mb-2 w-64 bg-gray-800 rounded-lg shadow-lg p-2 border border-gray-700">
-                <h4 className="text-sm font-semibold mb-2 px-2">Recent Media</h4>
-                {getRecentMedia().map(media => (
-                  <button
-                    key={media.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRecentClick(media);
-                    }}
-                    className="flex items-center p-2 w-full text-left hover:bg-gray-700 rounded-md"
-                  >
-                    <div className="w-8 h-8 mr-2 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                      <img 
-                        src={media.logo} 
-                        alt={media.name}
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = `/placeholder-${media.type}.svg`;
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{media.name}</p>
-                      <p className="text-xs text-gray-400 truncate">{media.type}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </button>
-
-          <button 
-            onClick={togglePlayPause}
-            className="rounded-full bg-pink-600 p-2 mr-2 hover:bg-pink-700 transition-colors"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? 
-              <PauseIcon className="h-5 w-5" /> : 
-              <PlayIcon className="h-5 w-5" />
-            }
-          </button>
-          
-          {currentMedia.type === 'tv' && (
-            <button 
-              onClick={togglePipMode}
-              className="rounded-full bg-gray-700 p-2 mr-2 hover:bg-gray-600 transition-colors"
-              aria-label="Picture in Picture"
-            >
-              <ArrowsPointingOutIcon className="h-5 w-5" />
-            </button>
-          )}
-          
-          <button 
-            onClick={stopMedia}
-            className="rounded-full bg-gray-700 p-2 hover:bg-gray-600 transition-colors"
-            aria-label="Close player"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
-export default UnifiedPlayer; 
+export default UnifiedPlayer;

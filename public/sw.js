@@ -26,62 +26,55 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Fetch event - serve from cache if available, otherwise fetch from network
+// Unified Fetch event - careful to not intercept module requests or dev-only paths
 self.addEventListener('fetch', event => {
-  // Skip unsupported schemes
   const url = new URL(event.request.url);
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    return;
-  }
 
-  // Skip caching for development URLs and dynamic content
-  if (url.hostname === 'localhost' || 
-      url.hostname.includes('.localhost') || 
-      url.searchParams.toString() || 
-      url.pathname.startsWith('/@vite/') || 
-      url.pathname.endsWith('.jsx') || 
-      url.pathname.includes('react-refresh') ||
-      url.pathname.includes('src/') ||
-      url.pathname.includes('node_modules/') ||
-      url.pathname.includes('assets/')) {
+  // Only handle http/https
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  // Bypass Service Worker for dev server, module scripts, vite HMR and source files
+  const isDevHost = url.hostname === 'localhost' || url.hostname.includes('.localhost');
+  const isModuleRequest = /\/src\/|\.jsx$|\.js$/.test(url.pathname);
+  const isViteInternal = url.pathname.startsWith('/@vite/') || url.pathname.includes('react-refresh');
+
+  if (isDevHost || isModuleRequest || isViteInternal) {
+    // Don't intercept module or dev requests; passthrough to network
     event.respondWith(
-      fetch(event.request)
-        .catch(error => {
-          console.error('Development resource fetch failed:', error);
-          return new Response('Development server not running', { status: 503 });
-        })
+      fetch(event.request).catch(error => {
+        console.warn('Dev passthrough fetch failed for:', event.request.url, error);
+        return new Response('Dev server fetch failed', { status: 503, statusText: 'Service Unavailable' });
+      })
     );
     return;
   }
 
+  // For stream requests (audio/video), passthrough and do not cache
+  if (url.pathname.includes('.m3u8') || url.pathname.includes('.mp3') || url.pathname.includes('/audio/') || url.pathname.includes('/live/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Normal caching strategy for other assets
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request, { mode: 'cors', redirect: 'follow' }).then(response => {
+        if (!response || !response.ok || event.request.method !== 'GET') return response;
+
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache).catch(err => console.warn('Cache put failed:', err));
+        });
+        return response;
+      }).catch(error => {
+        console.warn('Fetch failed for:', event.request.url, error && error.message);
+        if (event.request.destination === 'image') {
+          return new Response('', { status: 200, statusText: 'OK', headers: new Headers({ 'Content-Type': 'image/svg+xml' }) });
         }
-        return fetch(event.request).then(
-          response => {
-            // Don't cache failed responses or non-GET requests
-            if (!response || !response.ok || event.request.method !== 'GET') {
-              return response;
-            }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            // Cache the fetched response
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache)
-                  .catch(err => console.warn('Cache put failed:', err));
-              });
-
-            return response;
-          }
-        );
-      })
+        return new Response('Resource not available', { status: 404, statusText: 'Not Found' });
+      });
+    })
   );
 });
 
@@ -108,24 +101,4 @@ self.addEventListener('message', event => {
   }
 });
 
-// Keep-alive for audio streams
-const audioSessions = new Set();
-
-// Special handling for audio streams
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-  
-  // Check if this is an audio/video stream
-  if (
-    (url.pathname.includes('.m3u8') || 
-     url.pathname.includes('.mp3') ||
-     url.pathname.includes('/audio/') ||
-     url.pathname.includes('/live/'))
-  ) {
-    // Don't cache stream requests, pass through to network
-    event.respondWith(fetch(event.request));
-    
-    // Add to active sessions
-    audioSessions.add(url.href);
-  }
-});
+// Keep-alive for audio streams (no special fetch handler needed since streams passthrough above)

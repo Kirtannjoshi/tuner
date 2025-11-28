@@ -7,6 +7,20 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* Liquid Glass Effect */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: 10px;
+}
+
+.glass-effect {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+}
+
 :root {
   color-scheme: dark;
   --color-primary: #F863A6;
@@ -15,13 +29,20 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  max-width: 100vw;
   background-color: #111827;
   color: #ffffff;
+}
+
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* Custom scrollbar styles */
@@ -41,6 +62,17 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 
 /* Custom range input styles */
 input[type='range'] {
@@ -101,10 +133,373 @@ input[type='range']:focus::-webkit-slider-thumb {
 
 /* Hide scrollbar while maintaining functionality */
 .hide-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
+}
+
+/* Material 3 Design System Enhancements */
+
+/* Custom Slider Styles */
+.slider-thumb-pink {
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+}
+
+.slider-thumb-pink::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+  transition: all 0.2s ease;
+}
+
+.slider-thumb-pink::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+}
+
+.slider-thumb-pink::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+  transition: all 0.2s ease;
+}
+
+.slider-thumb-pink::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+}
+
+/* Material 3 Elevation Shadows */
+.elevation-1 {
+  box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.12), 0px 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.elevation-2 {
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.15), 0px 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.elevation-3 {
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.15), 0px 3px 6px rgba(0, 0, 0, 0.10);
+}
+
+.elevation-4 {
+  box-shadow: 0px 15px 25px rgba(0, 0, 0, 0.15), 0px 5px 10px rgba(0, 0, 0, 0.05);
+}
+
+.elevation-5 {
+  box-shadow: 0px 20px 40px rgba(0, 0, 0, 0.15), 0px 5px 10px rgba(0, 0, 0, 0.10);
+}
+
+/* Safe Area Support for Mobile */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .h-safe-bottom {
+    height: env(safe-area-inset-bottom);
+  }
+}
+
+/* Material 3 Button Styles */
+.material-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.material-button-filled {
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  color: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  transform: scale(1);
+}
+
+.material-button-filled:hover {
+  box-shadow: 0 15px 35px rgba(236, 72, 153, 0.25);
+  transform: scale(1.05);
+}
+
+.material-button-filled:active {
+  transform: scale(0.95);
+}
+
+.material-button-outlined {
+  border: 2px solid #ec4899;
+  color: #f472b6;
+  background: transparent;
+}
+
+.material-button-outlined:hover {
+  background: rgba(236, 72, 153, 0.1);
+  border-color: #f472b6;
+}
+
+.material-button-text {
+  color: #d1d5db;
+  background: transparent;
+}
+
+.material-button-text:hover {
+  background: rgba(55, 65, 81, 0.5);
+  color: white;
+}
+
+/* Material 3 Card Styles */
+.material-card {
+  background: rgba(31, 41, 55, 0.5);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(55, 65, 81, 0.3);
+  border-radius: 1.5rem;
+  box-shadow: 0px 20px 40px rgba(0, 0, 0, 0.15), 0px 5px 10px rgba(0, 0, 0, 0.10);
+}
+
+.material-card-elevated {
+  background: rgba(31, 41, 55, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(55, 65, 81, 0.3);
+  border-radius: 1.5rem;
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.15), 0px 3px 6px rgba(0, 0, 0, 0.10);
+}
+
+/* Mobile Optimization */
+
+/* Touch-friendly minimum sizes */
+@media (max-width: 768px) {
+
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Touch manipulation for better mobile performance */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe area support for notched devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent text selection on buttons */
+button {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Responsive text utilities */
+@media (max-width: 640px) {
+  .text-responsive-sm {
+    font-size: 0.875rem;
+  }
+
+  .text-responsive-base {
+    font-size: 1rem;
+  }
+
+  .text-responsive-lg {
+    font-size: 1.125rem;
+  }
+}
+
+/* Mobile-optimized animations (reduce motion) */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+/* Mobile viewport height fix */
+.min-h-screen-mobile {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Optimized backdrop blur for mobile */
+@supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+  .backdrop-blur-mobile {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Mobile-friendly focus states */
+@media (max-width: 768px) {
+  *:focus {
+    outline: 2px solid rgba(248, 99, 166, 0.5);
+    outline-offset: 2px;
+  }
+
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media (max-width: 768px) {
+
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari and Opera */
+}
+
+/* Mobile-optimized gradient animation */
+@media (max-width: 768px) {
+  .animate-gradient-x {
+    animation-duration: 20s;
+  }
+}
+
+/* Safe Area Utilities for Mobile */
+.h-safe-bottom {
+  height: env(safe-area-inset-bottom, 20px);
+}
+
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top, 20px);
+}
+
+/* Audio Player Specific Styles */
+
+/* Audio Progress Bar with Smooth Thumb */
+.audio-progress-thumb::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(248, 99, 166, 0.5);
+  transition: transform 0.2s ease;
+}
+
+.audio-progress-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.audio-progress-thumb::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(248, 99, 166, 0.5);
+  transition: transform 0.2s ease;
+}
+
+.audio-progress-thumb::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Audio Card Hover Effects */
+.audio-card {
+  background: rgba(31, 41, 55, 0.5);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(55, 65, 81, 0.3);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.audio-card:hover {
+  background: rgba(31, 41, 55, 0.7);
+  border-color: rgba(248, 99, 166, 0.3);
+  box-shadow: 0 10px 25px rgba(248, 99, 166, 0.1);
+}
+
+/* Audio Player Expanded Background */
+.audio-player-bg {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #0a0a0a 100%);
+}
+
+/* No Scrollbar Utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

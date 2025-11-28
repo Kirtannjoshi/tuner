@@ -53,10 +53,9 @@ mongoose.connection.on('error', err => {
 
 // Handle app termination
 process.on('SIGINT', () => {
-  mongoose.connection.close(() => {
-    console.log('MongoDB connection closed through app termination');
-    process.exit(0);
-  });
+  mongoose.connection.close();
+  console.log('MongoDB connection closed through app termination');
+  process.exit(0);
 });
 
 // API Routes

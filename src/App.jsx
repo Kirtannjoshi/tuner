@@ -1,27 +1,48 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
-import RadioPage from './pages/RadioPage';
-import TvPage from './pages/TvPage';
-import FavoritesPage from './pages/FavoritesPage';
-import HomePage from './pages/HomePage';
-import SportPage from './pages/SportPage';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { PlayerProvider } from './contexts/PlayerContext';
+
+// Lazy load pages
+const RadioPage = lazy(() => import('./pages/RadioPage'));
+const TvPage = lazy(() => import('./pages/TvPage'));
+const ArchivePage = lazy(() => import('./pages/ArchivePage'));
+const LibraryPage = lazy(() => import('./pages/LibraryPage'));
+const HomePage = lazy(() => import('./pages/HomePage'));
+const SportPage = lazy(() => import('./pages/SportPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const TunerMainPlayer = lazy(() => import('./components/player/TunerMainPlayer'));
+
+// Loading fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+  </div>
+);
 
 function App() {
   return (
-    <PlayerProvider>
+    <ErrorBoundary>
       <Router>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="radio" element={<RadioPage />} />
-            <Route path="tv" element={<TvPage />} />
-            <Route path="sport" element={<SportPage />} />
-            <Route path="favorites" element={<FavoritesPage />} />
-          </Route>
-        </Routes>
+        <PlayerProvider>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="radio" element={<RadioPage />} />
+                <Route path="tv" element={<TvPage />} />
+                <Route path="archive" element={<ArchivePage />} />
+                <Route path="sport" element={<SportPage />} />
+                <Route path="library" element={<LibraryPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="watch/:type/:id" element={<TunerMainPlayer />} />
+              </Route>
+            </Routes>
+          </Suspense>
+        </PlayerProvider>
       </Router>
-    </PlayerProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,297 +1,240 @@
-import { useState, useEffect, useContext } from 'react';
-import { MagnifyingGlassIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import { useLocation, useNavigate } from 'react-router-dom';
-import TvPlayer from '../components/tv/TvPlayer';
-import { getTvChannels, getChannelsByCategory, searchChannels, getTvCategories } from '../services/tvService';
-import { getFavoriteChannels } from '../services/favoritesService';
-import { PlayerContext } from '../contexts/PlayerContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { TvIcon, PlayIcon } from '@heroicons/react/24/solid';
+import { usePlayer } from '../contexts/PlayerContext';
+import { getTvChannelsFromSource } from '../services/tvService';
+import { loadCategories } from '../services/csvLoader';
 
 const TvPage = () => {
-  const [selectedChannel, setSelectedChannel] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [channels, setChannels] = useState([]);
+  const [displayedChannels, setDisplayedChannels] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // all, category, favorites, search
-  const [categories, setCategories] = useState([]);
-  
-  // Get the current playing media from context
-  const { currentMedia } = useContext(PlayerContext);
-  const location = useLocation();
+  const [categories, setCategories] = useState(['all']);
+  const [page, setPage] = useState(1);
+  const CHANNELS_PER_PAGE = 48;
+
+  const { playTv, setPlayerMode } = usePlayer();
   const navigate = useNavigate();
-  
-  // Handle URL parameters to preserve state across navigation
-  useEffect(() => {
-    // Parse URL parameters
-    const params = new URLSearchParams(location.search);
-    const channelId = params.get('id');
-    
-    if (channelId && channels.length > 0) {
-      // Find channel by ID
-      const channel = channels.find(c => c.id === channelId);
-      if (channel) {
-        setSelectedChannel(channel);
-      }
-    }
-  }, [location.search, channels]);
 
-  // Update URL when selected channel changes
   useEffect(() => {
-    if (selectedChannel) {
-      // Update URL with channel ID without full page reload
-      navigate(`/tv?id=${selectedChannel.id}`, { replace: true });
-    }
-  }, [selectedChannel, navigate]);
-
-  // Fetch initial channels on component mount
-  useEffect(() => {
-    fetchAllChannels();
-    setCategories(getTvCategories());
+    loadChannelsFromSource();
+    loadCategoriesFromCSV();
   }, []);
-  
-  // Sync selected channel with currently playing media
-  useEffect(() => {
-    if (currentMedia && currentMedia.type === 'tv' && channels.length > 0) {
-      // Find the currently playing channel in our list
-      const playingChannel = channels.find(channel => channel.id === currentMedia.id);
-      
-      if (playingChannel && (!selectedChannel || selectedChannel.id !== playingChannel.id)) {
-        setSelectedChannel(playingChannel);
-        
-        // If we're in a filtered view, try to adjust the view to show the current channel
-        if (activeTab !== 'all' && activeTab !== 'search') {
-          // For category tab, check if we need to change the category
-          if (activeTab === 'category' && playingChannel.genre !== selectedCategory) {
-            setSelectedCategory(playingChannel.genre);
-          } else {
-            // Default to all channels view to ensure the channel is visible
-            setActiveTab('all');
-            fetchAllChannels();
-          }
-        }
-      }
-    }
-  }, [currentMedia, channels, selectedCategory, activeTab]);
 
-  // Handle category selection changes
-  useEffect(() => {
-    if (activeTab === 'category' && selectedCategory !== 'all') {
-      fetchChannelsByCategory(selectedCategory);
-    }
-  }, [selectedCategory, activeTab]);
-
-  // Handle search query submission
-  useEffect(() => {
-    if (activeTab === 'search' && searchQuery.trim()) {
-      fetchSearchResults(searchQuery);
-    }
-  }, [activeTab]);
-
-  const fetchAllChannels = async () => {
-    setIsLoading(true);
-    setError(null);
+  const loadCategoriesFromCSV = async () => {
     try {
-      const data = await getTvChannels({ limit: 24 });
-      setChannels(data);
-      setActiveTab('all');
-    } catch (err) {
-      setError('Failed to load TV channels');
-      console.error(err);
+      const cats = await loadCategories();
+      const categoryNames = cats.map(c => c.name.toLowerCase());
+      setCategories(['all', ...categoryNames]);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  const loadChannelsFromSource = async () => {
+    setIsLoading(true);
+    // Always use IPTV Global source - ignore Settings
+    const iptvGlobalUrl = 'https://iptv-org.github.io/iptv/index.m3u';
+
+    try {
+      console.log('Loading channels from IPTV Global...');
+
+      // Use the new tvService function that handles IPTV playlists and decryption
+      const loadedChannels = await getTvChannelsFromSource({
+        source: iptvGlobalUrl,
+        category: 'all',
+        limit: null // No limit - load ALL channels
+      });
+
+      console.log(`✅ Loaded ${loadedChannels.length} channels from IPTV Global`);
+      setChannels(loadedChannels);
+    } catch (error) {
+      console.error('❌ Error loading channels:', error);
+      setChannels([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchChannelsByCategory = async (category) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getChannelsByCategory(category, 24);
-      setChannels(data);
-    } catch (err) {
-      setError(`Failed to load ${category} channels`);
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+  const groups = useMemo(() => {
+    // Use categories from CSV if available, otherwise extract from channels
+    if (categories.length > 1) {
+      return categories;
     }
-  };
+    const uniqueGroups = [...new Set(channels.map(c => c.genre || c.group || 'General'))];
+    return ['all', ...uniqueGroups.slice(0, 25)];
+  }, [channels, categories]);
 
-  const fetchFavoriteChannels = () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const favorites = getFavoriteChannels();
-      setChannels(favorites);
-      setActiveTab('favorites');
-    } catch (err) {
-      setError('Failed to load favorite channels');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+  // Filter channels based on search and group
+  const filteredChannels = useMemo(() => {
+    let filtered = channels;
+
+    if (selectedGroup !== 'all') {
+      filtered = filtered.filter(c => (c.genre || c.group || '').toLowerCase() === selectedGroup.toLowerCase());
     }
-  };
 
-  const fetchSearchResults = async (query) => {
-    if (!query.trim()) return;
-    
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await searchChannels(query, 24);
-      setChannels(data);
-    } catch (err) {
-      setError('Search failed');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCategoryChange = (e) => {
-    setSelectedCategory(e.target.value);
-    setActiveTab('category');
-  };
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
     if (searchQuery.trim()) {
-      setActiveTab('search');
-      fetchSearchResults(searchQuery);
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.name.toLowerCase().includes(query) ||
+        (c.genre || c.group || '').toLowerCase().includes(query) ||
+        (c.country || '').toLowerCase().includes(query)
+      );
     }
+
+    return filtered;
+  }, [channels, selectedGroup, searchQuery]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+    setDisplayedChannels(filteredChannels.slice(0, CHANNELS_PER_PAGE));
+  }, [filteredChannels]);
+
+  // Load more channels
+  const loadMore = () => {
+    const nextPage = page + 1;
+    const nextChannels = filteredChannels.slice(0, nextPage * CHANNELS_PER_PAGE);
+    setDisplayedChannels(nextChannels);
+    setPage(nextPage);
   };
 
-  const getContentTitle = () => {
-    switch (activeTab) {
-      case 'all': return 'All Channels';
-      case 'category': return `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Channels`;
-      case 'favorites': return 'Your Favorites';
-      case 'search': return `Search Results: "${searchQuery}"`;
-      default: return 'TV Channels';
-    }
+  const handleChannelClick = (channel) => {
+    playTv(channel);
+    navigate(`/watch/tv/${channel.id}`);
   };
+
+  const ChannelCard = ({ channel }) => (
+    <div
+      onClick={() => handleChannelClick(channel)}
+      className="group cursor-pointer transition-all"
+    >
+      {/* Thumbnail - Ultra Small */}
+      <div className="relative aspect-video bg-black rounded-md overflow-hidden mb-1">
+        <img
+          src={channel.logo}
+          alt={channel.name}
+          className="w-full h-full object-contain p-1"
+          loading="lazy"
+          onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/512/4409/4409506.png'}
+        />
+        <div className="absolute top-0.5 left-0.5 px-0.5 py-[1px] bg-red-600 rounded-sm text-[6px] font-bold text-white uppercase tracking-wider">
+          Live
+        </div>
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+            <PlayIcon className="h-4 w-4 text-white ml-0.5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Channel Info - Ultra Small */}
+      <div className="flex gap-1">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-white text-[10px] truncate mb-0 group-hover:text-pink-400 transition-colors leading-tight">
+            {channel.name}
+          </h3>
+          <p className="text-[9px] text-gray-500 truncate leading-tight">{channel.genre || channel.group || 'General'}</p>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <form onSubmit={handleSearchSubmit} className="relative flex-1">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search TV channels..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-pink-500"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </form>
-        
-        <select
-          value={selectedCategory}
-          onChange={handleCategoryChange}
-          className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-pink-500"
-        >
-          {categories.map(category => (
-            <option key={category} value={category}>
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={fetchAllChannels}
-          className={`px-4 py-2 rounded-lg ${activeTab === 'all' ? 'bg-lime-500' : 'bg-gray-800'} hover:bg-lime-600`}
-        >
-          All Channels
-        </button>
-        <button
-          onClick={fetchFavoriteChannels}
-          className={`px-4 py-2 rounded-lg ${activeTab === 'favorites' ? 'bg-lime-500' : 'bg-gray-800'} hover:bg-lime-600`}
-        >
-          Favorites
-        </button>
-      </div>
-
-      <TvPlayer channel={selectedChannel} />
-
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">{getContentTitle()}</h2>
-        <button
-          onClick={() => {
-            if (activeTab === 'all') fetchAllChannels();
-            else if (activeTab === 'category') fetchChannelsByCategory(selectedCategory);
-            else if (activeTab === 'search') fetchSearchResults(searchQuery);
-            else if (activeTab === 'favorites') fetchFavoriteChannels();
-          }}
-          className="flex items-center text-sm text-gray-400 hover:text-white"
-          disabled={isLoading}
-        >
-          <ArrowPathIcon className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
-
-      {error && (
-        <div className="bg-red-900/50 border border-red-700 p-4 rounded-lg text-center">
-          <p>{error}</p>
-          <button 
-            onClick={() => {
-              if (activeTab === 'all') fetchAllChannels();
-              else if (activeTab === 'category') fetchChannelsByCategory(selectedCategory);
-              else if (activeTab === 'search') fetchSearchResults(searchQuery);
-              else if (activeTab === 'favorites') fetchFavoriteChannels();
-            }}
-            className="mt-2 text-sm text-white bg-lime-700 px-3 py-1 rounded"
-          >
-            Try Again
-          </button>
+    <div className="space-y-4 pb-20 lg:pb-8 overflow-x-hidden w-full">
+      {/* Minimalistic Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <TvIcon className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">Live TV</h1>
+            <p className="text-xs text-gray-500">{filteredChannels.length} channels</p>
+          </div>
         </div>
-      )}
+      </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gray-800 animate-pulse p-4 h-24 rounded-lg"></div>
-          ))}
-        </div>
-      ) : channels.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {channels.map(channel => (
+      {/* Clean Search Bar */}
+      <div className="relative w-full">
+        <input
+          type="text"
+          placeholder="Search channels..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-gray-900/50 border border-gray-800/50 rounded-lg py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-pink-500/50 focus:bg-gray-900/80 text-gray-200 placeholder-gray-600"
+        />
+        <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-600" />
+      </div>
+
+      {/* Category Pills - Horizontal Scroll Enabled with Ocean Square Bar */}
+      <div className="w-full overflow-hidden">
+        <div
+          className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-ocean touch-pan-x w-full"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {groups.map(group => (
             <button
-              key={channel.id}
-              onClick={() => setSelectedChannel(channel)}
-              className={`flex items-center p-4 rounded-lg ${selectedChannel?.id === channel.id ? 'bg-lime-500' : 'bg-gray-800'} hover:bg-lime-600 transition-colors`}
+              key={group}
+              onClick={() => setSelectedGroup(group)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${selectedGroup === group
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
+                : 'bg-gray-900/50 text-gray-400 hover:text-white hover:bg-gray-800/50 border border-gray-800/50'
+                }`}
             >
-              <img
-                src={channel.logo}
-                alt={channel.name}
-                className="w-12 h-12 rounded object-contain bg-gray-700"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = '/placeholder-tv.svg';
-                }}
-              />
-              <div className="ml-4 text-left">
-                <h3 className="font-semibold truncate">{channel.name}</h3>
-                <p className="text-sm text-gray-400 truncate">
-                  {channel.category} • {channel.language}
-                </p>
-              </div>
+              {group === 'all' ? 'All' : group.charAt(0).toUpperCase() + group.slice(1)}
             </button>
           ))}
         </div>
-      ) : (
-        <div className="text-center py-10 bg-gray-800 rounded-lg">
-          <p className="text-gray-400">No channels found</p>
-          <p className="text-sm text-gray-500 mt-2">Try selecting a different category or search term</p>
-          <button 
-            onClick={fetchAllChannels} 
-            className="mt-4 px-4 py-2 bg-lime-500 hover:bg-lime-600 rounded-lg"
-          >
-            Show All Channels
-          </button>
+      </div>
+
+      {/* YouTube/Twitch Style Grid - Ultra Compact */}
+      {isLoading ? (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-2 w-full">
+          {[...Array(21)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="aspect-video bg-gray-800 rounded-md mb-1"></div>
+              <div className="h-2.5 bg-gray-800 rounded mb-0.5"></div>
+              <div className="h-2 bg-gray-800 rounded w-2/3"></div>
+            </div>
+          ))}
         </div>
+      ) : displayedChannels.length === 0 ? (
+        <div className="text-center py-20 bg-gray-900/30 rounded-xl border border-gray-800/50 w-full">
+          <div className="text-5xl mb-3">📺</div>
+          <p className="text-gray-500 mb-3">No channels found</p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-lg text-xs font-medium transition-all"
+            >
+              Clear Search
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-2 w-full">
+            {displayedChannels.map(channel => (
+              <ChannelCard key={channel.id} channel={channel} />
+            ))}
+          </div>
+
+          {/* Load More Trigger */}
+          {displayedChannels.length < filteredChannels.length && (
+            <div className="flex justify-center py-8">
+              <button
+                onClick={loadMore}
+                className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full text-sm font-medium transition-colors border border-gray-700"
+              >
+                Load More Channels
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

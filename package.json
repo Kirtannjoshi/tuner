@@ -10,15 +10,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@heroicons/react": "2.1.1",
-    "axios": "1.8.4",
+    "@material-tailwind/react": "^2.1.10",
+    "@mui/material": "^7.3.1",
+    "axios": "^1.8.4",
     "firebase": "^11.6.0",
     "framer-motion": "^12.7.4",
     "hls.js": "^1.6.2",
+    "lucide-react": "^0.554.0",
     "m3u8-parser": "^7.2.0",
+    "papaparse": "^5.5.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.22.1",
+    "shaka-player": "^4.16.9",
     "tuner": "file:"
   },
   "devDependencies": {
