@@ -41,7 +41,7 @@ const SideNav = () => {
                 <NavLink to="/" className="flex items-center">
                     <div className="h-10 w-32 flex items-center justify-start overflow-hidden">
                         <img
-                            src="/header-logo.png"
+                            src={`${import.meta.env.BASE_URL}tuner-logo.svg`}
                             alt="TUNER Logo"
                             className="h-full w-auto object-contain"
                         />

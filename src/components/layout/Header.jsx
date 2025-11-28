@@ -7,7 +7,7 @@ const Header = () => {
             <div className="flex items-center justify-between gap-4 mb-4">
                 {/* App Title */}
                 <div className="flex items-center gap-2">
-                    <img src="/header-logo.png" alt="Tuner Logo" className="h-8 w-auto object-contain" />
+                    <img src={`${import.meta.env.BASE_URL}tuner-logo.svg`} alt="Tuner Logo" className="h-8 w-auto object-contain" />
                 </div>
 
                 {/* Search Bar - Compact & Modern */}
